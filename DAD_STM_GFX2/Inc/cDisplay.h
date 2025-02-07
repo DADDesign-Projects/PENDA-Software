@@ -312,12 +312,12 @@ private :
     // --------------------------------------------------------------------------
     // Callbacks for SPI and DMA transmissions
     // These methods are called when specific SPI or DMA transmission steps complete
-    static void sendCASETDMAData(void* context);
-    static void sendRASETDMACmd(void* context);
-    static void sendRASETDMAData(void* context);
-    static void sendRAWWRDMACmd(void* context);
-    static void sendRAWWRDMAData(void* context);
-    static void endDMA(void* context);
+    ITCM static void sendCASETDMAData(void* context);
+    ITCM static void sendRASETDMACmd(void* context);
+    ITCM static void sendRASETDMAData(void* context);
+    ITCM static void sendRAWWRDMACmd(void* context);
+    ITCM static void sendRAWWRDMAData(void* context);
+    ITCM static void endDMA(void* context);
 
     // --------------------------------------------------------------------------
     // Attributes for screen and layer management

@@ -110,7 +110,8 @@ int16_t __Encoder3Inc;
 
 // ------------------------------------------------------------------------
 // AudioCallback
-void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut){
+// ------------------------------------------------------------------------
+ITCM void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut){
 	for (size_t i = 0; i < AUDIO_BUFFER_SIZE; i++)
 	{
 		pOut->Right = pIn->Right;
@@ -128,6 +129,29 @@ void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut){
 	__Encoder3Inc += __Encoder3.getIncrement();
 }
 
+// ------------------------------------------------------------------------
+// Function to copy code from Flash to ITCM RAM at startup
+// This ensures that critical code runs from ITCM for better performance.
+//
+// Any critical function that needs to run from ITCM must be preceded by the ITCM macro.
+// Example usage:
+//     ITCM void CriticalFunction() {
+//         // Time-sensitive code
+//     }
+// ------------------------------------------------------------------------
+
+extern uint32_t __sITCM, __eITCM, __lITCM;  // Linker symbols for ITCM section
+
+void Copy_ITCM_Code(void) {
+    uint32_t *pSrc = &__lITCM;  // Source address in Flash (load address)
+    uint32_t *pDest = &__sITCM; // Destination address in ITCM RAM (start of ITCM)
+
+    // Copy the code section from Flash to ITCM RAM
+    while (pDest < &__eITCM) {
+        *pDest++ = *pSrc++;
+    }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -138,7 +162,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	Copy_ITCM_Code();
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/

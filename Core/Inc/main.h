@@ -101,7 +101,8 @@ void Error_Handler(void);
 #define SDRAM_SECTION __attribute__((section(".SDRAM_Section")))
 #define QFLASH_SECTION __attribute__((section(".QFLASH_Section")))
 #define NO_CACHE_RAM __attribute__((section(".NO_CACHE_RAM_Section")))
-
+#define ITCM __attribute__((section(".RAM_ITCM0_Section")))
+//#define ITCM
 
 /* Audio ---------------------------------------------------------*/
 #define AUDIO_BUFFER_SIZE 4

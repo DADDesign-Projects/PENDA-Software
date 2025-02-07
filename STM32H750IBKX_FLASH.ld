@@ -234,9 +234,11 @@ SECTIONS
  /*  Unitialized RAM_ITCM0 section into "RAM_ITCM0" RAM_ITCM0 type memory [MMT section] */
  .RAM_ITCM0_Section :
   {
+  __sITCM = .;
     . = ALIGN(4);
     KEEP (*(.RAM_ITCM0_Section))
     . = ALIGN(4);
-  } >RAM_ITCM0
-
+    __eITCM = .;
+  } >RAM_ITCM0 AT > FLASH
+  __lITCM = LOADADDR(.RAM_ITCM0_Section);
 }
