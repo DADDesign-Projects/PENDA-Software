@@ -39,4 +39,8 @@
 
 //-------------------------------------------------------------------------
 // FIFO size for SPI block transmission via DMA
-#define SIZE_FIFO 5  // Number of blocks in the FIFO buffer
+#define SIZE_FIFO 20  // Number of blocks in the FIFO buffer
+
+//-------------------------------------------------------------------------
+// If you want to use the DMA2D graphics accelerator, uncomment the following line.
+#define USE_DMA2D

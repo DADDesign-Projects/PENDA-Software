@@ -476,6 +476,7 @@ void cDisplay::switchOrientation(ORIENTATION Orientation) {
 // - pDest: Pointer to the destination pixel data.
 // - Width: Width of the block to process, in pixels.
 // - Height: Height of the block to process, in pixels.
+#ifndef USE_DMA2D
 void cDisplay::Blend2Bloc( uint32_t OutputOffset, uint32_t  InputOffset1, uint32_t  InputOffset2, DadGFX::sColor* pSource1, DadGFX::sColor* pSource2, DadGFX::sColor* pDest, uint32_t Width,  uint32_t Height){
     
   // Loop through each pixels 
@@ -516,7 +517,41 @@ void cDisplay::Blend2Bloc( uint32_t OutputOffset, uint32_t  InputOffset1, uint32
     pDest += OutputOffset;
   }   
 }
+#else
+void cDisplay::Blend2Bloc(uint32_t OutputOffset, uint32_t InputOffset1, uint32_t InputOffset2, DadGFX::sColor* pSource1, DadGFX::sColor* pSource2, DadGFX::sColor* pDest, uint32_t Width, uint32_t Height) {
 
+	// Wait for the operation to complete
+    while (DMA2D->CR & DMA2D_CR_START) {
+    }
+
+    // Configure DMA2D (Direct Memory Access 2D) for blending operation
+    DMA2D->CR = 0x00020000;  // Set blending mode (blending operation mode)
+
+    // Set memory addresses for the foreground and background sources
+    DMA2D->FGMAR = (uint32_t)pSource1;  // Memory address for the first source (foreground)
+    DMA2D->BGMAR = (uint32_t)pSource2;  // Memory address for the second source (background)
+
+    // Set memory address for the destination
+    DMA2D->OMAR = (uint32_t)pDest;      // Memory address for the destination
+
+    // Configure color formats
+    DMA2D->FGPFCCR = DMA2D_INPUT_ARGB8888;  // Set ARGB8888 format for the first source
+    DMA2D->BGPFCCR = DMA2D_INPUT_ARGB8888;  // Set ARGB8888 format for the second source
+    DMA2D->OPFCCR = DMA2D_OUTPUT_ARGB8888;  // Set ARGB8888 format for the destination
+
+    // Configure offsets for sources and destination
+    DMA2D->FGOR = InputOffset1;  // Offset for the first source (foreground)
+    DMA2D->BGOR = InputOffset2;  // Offset for the second source (background)
+    DMA2D->OOR = OutputOffset;   // Offset for the destination
+
+    // Set the width and height for the area to be processed
+    DMA2D->NLR = (Width << 16) | Height;  // Set width and height of the area
+
+    // Start the DMA2D operation
+    DMA2D->CR |= DMA2D_CR_START;
+
+}
+#endif
 // --------------------------------------------------------------------------
 // Flush all dirty blocks to the display
 void cDisplay::flush() {
@@ -581,6 +616,11 @@ void cDisplay::flush() {
                         );
                     }
                 }
+#ifdef USE_DMA2D
+                // Wait for the DMA2D operation to complete
+                while (DMA2D->CR & DMA2D_CR_START) {
+                }
+#endif
                 // Add the processed block to the FIFO for transmission
             	m_CtWait = 0;
 
