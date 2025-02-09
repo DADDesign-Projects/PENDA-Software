@@ -57,6 +57,12 @@ enum class ORIENTATION {
     Landscape      // Horizontal orientation
 };
 
+// Layer write modes
+enum class DRAW_MODE {
+    Blend,       // Blend layers with transparency
+    Overwrite    // Overwrite completely
+};
+
 //***********************************************************************************
 // Cmd_CASET
 //   SPI Command for column selection
@@ -340,13 +346,12 @@ private :
 
     // --------------------------------------------------------------------------
     // FIFO buffer for block transmission
-    sFIFO_Data* m_pFIFO = nullptr;  // Pointer to the FIFO buffer
-    uint16_t m_FIFO_in = 0;         // Index of the first free block (FIFO input)
-    uint16_t m_FIFO_out = 0;        // Index of the next block to transmit (FIFO output)
+    sFIFO_Data* m_pFIFO = nullptr;  		 // Pointer to the FIFO buffer
+    uint16_t m_FIFO_in = 0;         		 // Index of the first free block (FIFO input)
+    uint16_t m_FIFO_out = 0;        		 // Index of the next block to transmit (FIFO output)
     volatile uint16_t m_FIFO_NbElements = 0; // Number of elements currently in the FIFO
     volatile bool m_Busy = false;            // Flag to indicate if a transmission is ongoing
-    volatile uint32_t m_CtWait = 0;		     //
-    uint32_t		  m_MaxCtWait = 0;		 //
+
 };
 
 //***********************************************************************************
@@ -436,6 +441,12 @@ public:
     // Erase the layer
     virtual DAD_GFX_ERROR eraseLayer(const sColor& Color = sColor(0,0,0,255));
 
+    // -----------------------------------------------------------------------------
+    // Set the layer write mode
+    inline void setMode(DRAW_MODE Mode){
+        m_Mode = Mode;
+    }
+
 protected :
     // --------------------------------------------------------------------------
     // Initialize the layer with display, DMA2D handler, frame buffer, dimensions, and Z position
@@ -454,7 +465,9 @@ protected :
     virtual DAD_GFX_ERROR fillRectWithBitmap(uint16_t x0, uint16_t y0, const uint8_t* pBitmap, uint16_t BitmapWidth, uint16_t BitmapBmpHeight,
                                              const sColor& ForegroundColor, const sColor& BackgroundColor);
                                              protected :
-    
+    // -----------------------------------------------------------------------------
+    // Data
+    DRAW_MODE   m_Mode = DRAW_MODE::Blend;
 };
 
 //***********************************************************************************

@@ -49,6 +49,7 @@ void cLayer::init(cDisplay* pDisplay, sColor* pLayerFrame, uint16_t y, uint16_t 
 
 // --------------------------------------------------------------------------
 // Draw a rectangle in the layer starting at (x, y) with specified width, height, and color
+#ifndef USE_DMA2D
 DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint16_t Height, const sColor& Color) {
     // ----------------------------------------------------------------------
     // Check bounds and validity of frame buffer
@@ -65,7 +66,7 @@ DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint1
     }
 
     // If the alpha component is zero, rectangle is fully transparent, nothing to draw
-    if (Color.m_A == 0) {
+    if ((Color.m_A == 0) &&  (m_Mode == DRAW_MODE::Blend)) {
         return DAD_GFX_ERROR::OK;  // Operation successful but no modification
     }
 
@@ -78,7 +79,7 @@ DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint1
         pFrame = &m_pLayerFrame[((y + indexY) * m_Width) + x];
 
         for (uint16_t indexX = 0; indexX < Width; indexX++) {
-            if (Color.m_A == 255) {
+        	if ((Color.m_A == 255) || (m_Mode == DRAW_MODE::Overwrite)) {
                 // Fully opaque color: overwrite the pixel
                 pFrame->m_ARGB = Color.m_ARGB;
             } else {
@@ -118,7 +119,67 @@ DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint1
     // Operation successful
     return DAD_GFX_ERROR::OK;
 }
+#else
+DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint16_t Height, const sColor& Color) {
+    // Check bounds and frame buffer validity
+    if (!m_pLayerFrame || x >= m_Width || y >= m_Height) {
+        return DAD_GFX_ERROR::Size_Error;
+    }
 
+    // Adjust dimensions if rectangle exceeds boundaries
+    if (x + Width > m_Width) {
+        Width = m_Width - x;
+    }
+    if (y + Height > m_Height) {
+        Height = m_Height - y;
+    }
+
+    // If fully transparent, nothing to draw
+    if ((Color.m_A == 0) &&  (m_Mode == DRAW_MODE::Blend)) {
+        return DAD_GFX_ERROR::OK;
+    }
+
+	// Wait for DMA2D operation to complete
+    while (DMA2D->CR & DMA2D_CR_START) {
+    }
+
+    // Configure DMA2D
+    DMA2D->CR = DMA2D_R2M; // Register to Memory mode
+    DMA2D->OPFCCR = DMA2D_OUTPUT_ARGB8888; // Set output format to ARGB8888
+    DMA2D->OCOLR = Color.m_ARGB; // Set output color
+
+    // Setup destination area
+    DMA2D->OMAR = (uint32_t)&m_pLayerFrame[y * m_Width + x]; // Destination address
+    DMA2D->OOR = m_Width - Width; // Output offset in pixels
+    DMA2D->NLR = (Width << DMA2D_NLR_PL_Pos) | // Pixels per line
+                 (Height << DMA2D_NLR_NL_Pos);  // Number of lines
+
+    if ((Color.m_A != 255) && (m_Mode == DRAW_MODE::Blend)) {
+        // Alpha blending mode setup
+        DMA2D->CR |= DMA2D_CR_MODE_0; // Memory to Memory with Blending mode
+
+        // Foreground layer setup (new color)
+        DMA2D->FGPFCCR = DMA2D_INPUT_ARGB8888 |
+                         (Color.m_A << DMA2D_FGPFCCR_ALPHA_Pos);
+
+        // Background layer setup (existing frame buffer)
+        DMA2D->BGPFCCR = DMA2D_INPUT_ARGB8888;
+        DMA2D->BGMAR = (uint32_t)&m_pLayerFrame[y * m_Width + x];
+        DMA2D->BGOR = m_Width - Width;
+    }
+
+    // Start DMA2D transfer
+    DMA2D->CR |= DMA2D_CR_START;
+
+    // ----------------------------------------------------------------------
+    // Invalidate the modified screen zone
+    // Notify the display system of the updated region for redraw
+    m_pDisplay->invalidateRect(m_X + x, m_Y + y, m_X + x + Width - 1, m_Y + y + Height - 1);
+
+    // Operation successful
+    return DAD_GFX_ERROR::OK;
+}
+#endif
 // --------------------------------------------------------------------------
 // Set a pixel in the layer at (x, y) to the specified color
 DAD_GFX_ERROR cLayer::setPixel(uint16_t x, uint16_t y, const sColor& Color) {
@@ -132,10 +193,15 @@ DAD_GFX_ERROR cLayer::setPixel(uint16_t x, uint16_t y, const sColor& Color) {
     // Update the pixel color in the frame buffer
     sColor* pFrame = &m_pLayerFrame[(y * m_Width) + x];  // Calculate the address of the pixel
 
-    if (Color.m_A == 0) {
+#ifdef USE_DMA2D
+	// Wait for the operation to complete
+    while (DMA2D->CR & DMA2D_CR_START) {
+    }
+#endif
+    if ((Color.m_A == 0) && (m_Mode == DRAW_MODE::Blend)) {
         // Fully transparent color, nothing to update
         return DAD_GFX_ERROR::OK;
-    } else if (Color.m_A == 255) {
+    } else if ((Color.m_A == 255) || (m_Mode == DRAW_MODE::Overwrite)) {
         // Fully opaque color, directly overwrite the pixel
         pFrame->m_ARGB = Color.m_ARGB;
     } else {
@@ -203,7 +269,11 @@ DAD_GFX_ERROR cLayer::fillRectWithBitmap(
         //BitmapHeight = m_Height - y0;
         return DAD_GFX_ERROR::Size_Error;  // Out of bounds 
     }
-
+#ifdef USE_DMA2D
+    // Wait for the operation to complete
+    while (DMA2D->CR & DMA2D_CR_START) {
+    }
+#endif
     // -------------------------------------------------------------------------
     // Iterate through each row of the bitmap
     const uint8_t* pCurrentBitmap = pBitmap;  // Pointer to the current byte in the bitmap
@@ -219,8 +289,8 @@ DAD_GFX_ERROR cLayer::fillRectWithBitmap(
             const sColor& Color = (currentByte & 0x80) ? ForegroundColor : BackgroundColor;
 
             // Apply the color with optional alpha blending
-            if (Color.m_A != 0) {  // Skip fully transparent colors
-                if (Color.m_A == 255) {
+            if ((Color.m_A != 0) || (m_Mode == DRAW_MODE::Overwrite)) {  // Skip fully transparent colors
+            	if ((Color.m_A == 255) || (m_Mode == DRAW_MODE::Overwrite)) {
                     // Fully opaque color, overwrite directly
                     pFrame->m_ARGB = Color.m_ARGB;
                 } else {
@@ -266,7 +336,12 @@ DAD_GFX_ERROR cLayer::fillRectWithBitmap(
 // -----------------------------------------------------------------------------
 // Erase the layer
 DAD_GFX_ERROR cLayer::eraseLayer(const sColor& Color){
-    return setRectangle(0, 0, m_Width, m_Height, Color);
+    DAD_GFX_ERROR Result;
+    DRAW_MODE OldMode = m_Mode;
+    setMode(DRAW_MODE::Overwrite);
+    Result = setRectangle(0, 0, m_Width, m_Height, Color);
+    setMode(OldMode);
+    return Result;
 }
 
 // --------------------------------------------------------------------------
@@ -622,13 +697,11 @@ void cDisplay::flush() {
                 }
 #endif
                 // Add the processed block to the FIFO for transmission
-            	m_CtWait = 0;
-
                 while (AddBloc(blocX, blocY) == false) {
-                    // Wait if the FIFO is full
-                	m_CtWait++;
-                	if(m_CtWait > m_MaxCtWait){
-                		m_MaxCtWait = m_CtWait;
+                	// Wait if the FIFO is full
+                    volatile uint32_t Ct = 0;
+                	while (Ct < 0xFFFF){
+                		Ct++;
                 	}
                 }
                 sendDMA(); // Transmit the block
