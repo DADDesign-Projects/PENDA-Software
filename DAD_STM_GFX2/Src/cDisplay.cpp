@@ -49,7 +49,7 @@ void cLayer::init(cDisplay* pDisplay, sColor* pLayerFrame, uint16_t y, uint16_t 
 
 // --------------------------------------------------------------------------
 // Draw a rectangle in the layer starting at (x, y) with specified width, height, and color
-#ifndef USE_DMA2D
+//#ifndef USE_DMA2D
 DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint16_t Height, const sColor& Color) {
     // ----------------------------------------------------------------------
     // Check bounds and validity of frame buffer
@@ -119,6 +119,7 @@ DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint1
     // Operation successful
     return DAD_GFX_ERROR::OK;
 }
+/* DMA2D does not handle transparency for color fills. ?
 #else
 DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint16_t Height, const sColor& Color) {
     // Check bounds and frame buffer validity
@@ -160,7 +161,8 @@ DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint1
 
         // Foreground layer setup (new color)
         DMA2D->FGPFCCR = DMA2D_INPUT_ARGB8888 |
-                         (Color.m_A << DMA2D_FGPFCCR_ALPHA_Pos);
+                         (Color.m_A << DMA2D_FGPFCCR_ALPHA_Pos)||
+                         DMA2D_FGPFCCR_AM_0;
 
         // Background layer setup (existing frame buffer)
         DMA2D->BGPFCCR = DMA2D_INPUT_ARGB8888;
@@ -180,6 +182,7 @@ DAD_GFX_ERROR cLayer::setRectangle(uint16_t x, uint16_t y, uint16_t Width, uint1
     return DAD_GFX_ERROR::OK;
 }
 #endif
+*/
 // --------------------------------------------------------------------------
 // Set a pixel in the layer at (x, y) to the specified color
 DAD_GFX_ERROR cLayer::setPixel(uint16_t x, uint16_t y, const sColor& Color) {
@@ -193,11 +196,11 @@ DAD_GFX_ERROR cLayer::setPixel(uint16_t x, uint16_t y, const sColor& Color) {
     // Update the pixel color in the frame buffer
     sColor* pFrame = &m_pLayerFrame[(y * m_Width) + x];  // Calculate the address of the pixel
 
-#ifdef USE_DMA2D
+//#ifdef USE_DMA2D
 	// Wait for the operation to complete
-    while (DMA2D->CR & DMA2D_CR_START) {
-    }
-#endif
+//    while (DMA2D->CR & DMA2D_CR_START) {
+//    }
+//#endif
     if ((Color.m_A == 0) && (m_Mode == DRAW_MODE::Blend)) {
         // Fully transparent color, nothing to update
         return DAD_GFX_ERROR::OK;
@@ -269,11 +272,11 @@ DAD_GFX_ERROR cLayer::fillRectWithBitmap(
         //BitmapHeight = m_Height - y0;
         return DAD_GFX_ERROR::Size_Error;  // Out of bounds 
     }
-#ifdef USE_DMA2D
+//#ifdef USE_DMA2D
     // Wait for the operation to complete
-    while (DMA2D->CR & DMA2D_CR_START) {
-    }
-#endif
+//    while (DMA2D->CR & DMA2D_CR_START) {
+//    }
+//#endif
     // -------------------------------------------------------------------------
     // Iterate through each row of the bitmap
     const uint8_t* pCurrentBitmap = pBitmap;  // Pointer to the current byte in the bitmap
