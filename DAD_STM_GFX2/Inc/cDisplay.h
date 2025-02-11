@@ -439,7 +439,7 @@ public:
    
     // -----------------------------------------------------------------------------
     // Erase the layer
-    virtual DAD_GFX_ERROR eraseLayer(const sColor& Color = sColor(0,0,0,255));
+    virtual DAD_GFX_ERROR eraseLayer(const sColor& Color = sColor(0,0,0,0));
 
     // -----------------------------------------------------------------------------
     // Set the layer write mode
