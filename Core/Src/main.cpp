@@ -29,6 +29,7 @@
 
 #include "Penda.h"
 #include "Vanilla_Extract_20p.h"
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -232,8 +233,13 @@ int main(void)
   pBall->drawFillCircle(7,7,7,DadGFX::sColor(255, 255, 255,255));
 
   DadGFX::cImageLayer* pPenda = __Display.addLayer(Penda_map, 70, 20, 80, 80, 8);
+  // If you use flash memory storage
+  //DadGFX::cImageLayer* pPenda = __Display.addLayer(__FlashStorage.GetFilePtr("Penda.png"), 70, 20, 80, 80, 8);
 
   DadGFX::cFont Vanilla(&__Vanilla_Extract_20p);
+  // If you use flash memory storage
+  //DadGFX::GFXBinFont * pBinFont = (DadGFX::GFXBinFont *)__FlashStorage.GetFilePtr("Vanilla_Extract_20p.bin");
+  //DadGFX::cFont Vanilla(pBinFont);
   DadGFX::cLayer* pText = ADD_LAYER(TextLayer, 20, 160, 2);
   pText->setFont(&Vanilla);
   pText->setCursor(0,0);
@@ -258,13 +264,12 @@ int main(void)
   int16_t XPenda = 20;
   int16_t YPenda = 70;
   uint8_t  Move = 0;
-
+  char Buffer[40];
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
 	  if(__Encoder0Inc != 0){
 		  XPenda += __Encoder0Inc;
 		  __Encoder0Inc = 0;
