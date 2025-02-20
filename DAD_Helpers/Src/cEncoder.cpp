@@ -72,12 +72,12 @@ void cEncoder::Debounce(){
 		m_ctSwitch += DeltaTime;
 		if (m_ctSwitch > (int32_t)m_SwitchUpdatePeriodMs) {
 			m_ctSwitch = (int32_t)m_SwitchUpdatePeriodMs;
-			m_SwitchState = 1; // Switch pressed
+			m_SwitchState = 0; // Switch pressed
 		}
 	} else {
 		m_ctSwitch -= DeltaTime;
 		if (m_ctSwitch < -(int32_t) m_SwitchUpdatePeriodMs) {
-			m_SwitchState = 0; // Switch released
+			m_SwitchState = 1; // Switch released
 			m_ctSwitch = -(int32_t)m_SwitchUpdatePeriodMs;
 		}
 	}

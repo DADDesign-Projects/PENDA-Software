@@ -72,6 +72,9 @@ enum IS25LP064A_Commands {
 };
 
 #define IS25CMD (uint32_t)IS25LP064A_Commands
+#define IS25LP064A_Size 		8*1024*1024
+#define IS25LP064A_SectorSize	4096
+#define IS25LP064A_PageSize		256
 
 // Structure du Status Register pour IS25LP064A
 union IS25LP064A_StatusReg {
@@ -144,6 +147,14 @@ public:
 	//   HAL status indicating success or failure of the configuration.
 	// ------------------------------------------------------------------------
 	HAL_StatusTypeDef MemoryMap();
+
+	// ------------------------------------------------------------------------
+	// Configures the QSPI memory in indirect Mode access
+	//
+	// Returns:
+	//   HAL_OK if successful, otherwise an error status.
+	// ------------------------------------------------------------------------
+	HAL_StatusTypeDef SwapModeIndirect();
 
 	// ------------------------------------------------------------------------
 	// Performs a fast read operation from the QSPI memory.

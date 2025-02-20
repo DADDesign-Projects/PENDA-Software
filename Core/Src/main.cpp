@@ -26,10 +26,7 @@
 #include "cDisplay.h"
 #include "QSPI.h"
 #include "cEncoder.h"
-
-#include "Penda.h"
-#include "Vanilla_Extract_20p.h"
-#include <stdio.h>
+#include "Delay.h"
 
 /* USER CODE END Includes */
 
@@ -93,24 +90,15 @@ Dad::cIS25LPxxx __Flash;
 // ---------------------------------------------------------------------------
 //GFX
 DECLARE_DISPLAY(__Display);
-DECLARE_LAYER(BackgroundLayer, 320, 240)
-DECLARE_LAYER(BallLayer, 16, 16)
-DECLARE_LAYER(RacquetLayer, 6, 40)
-DECLARE_LAYER(TextLayer, 250, 100)
+DECLARE_LAYER(Back, TFT_HEIGHT , TFT_WIDTH);
 
+// ---------------------------------------------------------------------------
 //QSPI FlasherStorage
 DadQSPI::cQSPI_FlasherStorage QFLASH_SECTION __FlashStorage;
 
-//Encoders
-DadUI::cEncoder __Encoder0;
-DadUI::cEncoder __Encoder1;
-DadUI::cEncoder __Encoder2;
-DadUI::cEncoder __Encoder3;
-
-int16_t __Encoder0Inc;
-int16_t __Encoder1Inc;
-int16_t __Encoder2Inc;
-int16_t __Encoder3Inc;
+// ---------------------------------------------------------------------------
+//Delay
+DadDelay::cDelayUI __DelayUI;
 
 // ------------------------------------------------------------------------
 // AudioCallback
@@ -123,14 +111,7 @@ ITCM void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut){
 		pOut++;
 		pIn++;
 	}
-	__Encoder0.Debounce();
-	__Encoder1.Debounce();
-	__Encoder2.Debounce();
-	__Encoder3.Debounce();
-	__Encoder0Inc += __Encoder0.getIncrement();
-	__Encoder1Inc += __Encoder1.getIncrement();
-	__Encoder2Inc += __Encoder2.getIncrement();
-	__Encoder3Inc += __Encoder3.getIncrement();
+	DadUI::cUI::Debounce();
 }
 
 // ------------------------------------------------------------------------
@@ -166,7 +147,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	Copy_ITCM_Code();
+  Copy_ITCM_Code();
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -213,40 +194,18 @@ int main(void)
   __Flash.Init(&hqspi);
 
   INIT_DISPLAY(__Display, &hspi1);
-  __Encoder0.Init(Encoder0_A_GPIO_Port, Encoder0_A_Pin, Encoder0_B_GPIO_Port, Encoder0_B_Pin, Encoder0_SW_GPIO_Port, Encoder0_SW_Pin, 20, 100);
-  __Encoder1.Init(Encoder1_A_GPIO_Port, Encoder1_A_Pin, Encoder1_B_GPIO_Port, Encoder1_B_Pin, Encoder1_SW_GPIO_Port, Encoder1_SW_Pin, 20, 100);
-  __Encoder2.Init(Encoder2_A_GPIO_Port, Encoder2_A_Pin, Encoder2_B_GPIO_Port, Encoder2_B_Pin, Encoder2_SW_GPIO_Port, Encoder2_SW_Pin, 20, 100);
-  __Encoder3.Init(Encoder3_A_GPIO_Port, Encoder3_A_Pin, Encoder3_B_GPIO_Port, Encoder3_B_Pin, Encoder3_SW_GPIO_Port, Encoder3_SW_Pin, 20, 100);
+  __Display.setOrientation(Rotation::Degre_90);
+
+  DadGFX::cLayer *pBack = ADD_LAYER(Back, 0,0,1);
+  pBack->eraseLayer(DadGFX::sColor(0,0,0,255));
+
+
+  DadUI::cUI::Init();
+  __DelayUI.Init();
+
+  //__DelayUI.Init();
   StartAudio();
 
-  __Display.setOrientation(Rotation::Degre_90);
-  DadGFX::cLayer* pBackground = ADD_LAYER(BackgroundLayer, 0, 0, 1);
-  pBackground->drawFillRect(0,0,320, 240, DadGFX::sColor(9, 111, 148, 255));
-  pBackground->drawFillRect(80, 0, 80, 240, DadGFX::sColor(23, 148, 194, 255));
-  pBackground->drawFillRect(240, 0, 240, 240, DadGFX::sColor(23, 148, 194, 255));
-
-
-  DadGFX::cLayer* pRacquet = ADD_LAYER(RacquetLayer, 0, 0, 11);
-  pRacquet->drawFillRect(0,0,6,40, DadGFX::sColor(255, 255, 255, 255));
-
-  DadGFX::cLayer* pBall = ADD_LAYER(BallLayer, 0, 0, 10);
-  pBall->drawFillCircle(7,7,7,DadGFX::sColor(255, 255, 255,255));
-
-  DadGFX::cImageLayer* pPenda = __Display.addLayer(Penda_map, 70, 20, 80, 80, 8);
-  // If you use flash memory storage
-  //DadGFX::cImageLayer* pPenda = __Display.addLayer(__FlashStorage.GetFilePtr("Penda.png"), 70, 20, 80, 80, 8);
-
-  DadGFX::cFont Vanilla(&__Vanilla_Extract_20p);
-  // If you use flash memory storage
-  //DadGFX::GFXBinFont * pBinFont = (DadGFX::GFXBinFont *)__FlashStorage.GetFilePtr("Vanilla_Extract_20p.bin");
-  //DadGFX::cFont Vanilla(pBinFont);
-  DadGFX::cLayer* pText = ADD_LAYER(TextLayer, 20, 160, 2);
-  pText->setFont(&Vanilla);
-  pText->setCursor(0,0);
-  pText->setTextFrontColor(DadGFX::sColor(255,255,255,100));
-  pText->drawText("Demo");
-  pText->setCursor(0,Vanilla.getHeight());
-  pText->drawText("PENDA Generic");
 
   __Display.flush();
 
@@ -254,92 +213,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float AvanceX = 7;
-  float AvanceY = 5;
-  int16_t PosX = 0;
-  int16_t PosY = 100;
-  int16_t PosRacquetX = 320-30;
-  int16_t PosRacquetY = (240/2)-20;
 
-  int16_t XPenda = 20;
-  int16_t YPenda = 70;
-  uint8_t  Move = 0;
-  char Buffer[40];
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(__Encoder0Inc != 0){
-		  XPenda += __Encoder0Inc;
-		  __Encoder0Inc = 0;
-		  Move = 1;
-	  }
-	  if(__Encoder1Inc != 0){
-		  XPenda += __Encoder1Inc;
-		  YPenda += __Encoder1Inc;
-		  __Encoder1Inc = 0;
-		  Move = 1;
-	  }
-	  if(__Encoder2Inc != 0){
-		  YPenda += __Encoder2Inc;
-		  __Encoder2Inc = 0;
-		  Move = 1;
-	  }
-	  if(__Encoder3Inc != 0){
-		  XPenda += __Encoder3Inc;
-		  YPenda -= __Encoder3Inc;
-		  __Encoder3Inc = 0;
-		  Move = 1;
-	  }
-
-	  if( Move == 1 ){
-		  if(XPenda < 0) XPenda = 0;
-		  if(XPenda > __Display.getWith()) XPenda=__Display.getWith()-1;
-		  if(YPenda <0) YPenda = 0;
-		  if(YPenda > __Display.getHeight()) YPenda=__Display.getHeight()-1;
-
-		  Move = 0;
-		  pPenda->moveLayer(XPenda, YPenda);
-	  }
-
-      PosX += AvanceX;
-      if(PosX < 0){
-          PosX = 0;
-          AvanceX = - AvanceX;
-      }
-      if(PosX >= TFT_HEIGHT-30){
-          PosX = TFT_HEIGHT-30;
-          AvanceX = - AvanceX;
-      }
-
-      PosY += AvanceY;
-      if(PosY < 0){
-          PosY = 0;
-          AvanceY = - AvanceY;
-      }
-
-      if(PosY >= TFT_WIDTH-7){
-          PosY = TFT_WIDTH-7;
-          AvanceY = - AvanceY;
-      }
-
-      int16_t DelatY = (PosRacquetY + 20) - PosY;
-
-      PosRacquetY -= DelatY / (3+((TFT_HEIGHT-PosX)/25));
-
-      if(PosRacquetY < 0){
-          PosRacquetY = 0;
-      }
-
-      if((PosRacquetY+40) > TFT_WIDTH){
-          PosRacquetY = TFT_WIDTH-40;
-      }
-
-      pBall->moveLayer(PosX, PosY);
-      pRacquet->moveLayer(PosRacquetX, PosRacquetY);
+	  DadUI::cUI::Refresh();
       __Display.flush();
-      HAL_Delay(10);
+      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+      HAL_Delay(300);
   }
   /* USER CODE END 3 */
 }
@@ -588,7 +471,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
   hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
   hspi1.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
-  hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+  hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_ENABLE;
   hspi1.Init.IOSwap = SPI_IO_SWAP_DISABLE;
   if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {

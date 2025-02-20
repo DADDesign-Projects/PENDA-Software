@@ -43,6 +43,30 @@ protected:
     }
 
     // ------------------------------------------------------------------------
+    // Sends a QSPI command with address phase.
+    //
+    // Parameters:
+    //   Instruction - The command instruction to be sent.
+    //   Address - The target address of the command.
+    //
+    // Returns:
+    //   HAL_OK if successful, HAL_ERROR if the command fails.
+    // ------------------------------------------------------------------------
+    inline HAL_StatusTypeDef CommandAddress(uint32_t Instruction, uint32_t Address) {
+        // Set the command instruction
+        m_CommandAddress.Instruction = Instruction;
+
+        // Set data length to 0 (no data phase)
+        m_CommandAddress.NbData = 0;
+        m_CommandAddress.DataMode = QSPI_DATA_NONE;
+        m_CommandAddress.Address=Address;
+
+        // Send the command
+        return HAL_QSPI_Command(m_phqspi, &m_CommandAddress, HAL_QSPI_TIMEOUT_DEFAULT_VALUE);
+    }
+
+
+    // ------------------------------------------------------------------------
     // Sends a QSPI command with a data transmission phase.
     //
     // Parameters:
@@ -156,7 +180,7 @@ protected:
     // without requiring explicit read commands.
     //
     // Returns:
-    //   HAL status indicating success or failure of the configuration.
+    //   HAL_OK if successful, HAL_ERROR if the command fails.
     // ------------------------------------------------------------------------
     inline HAL_StatusTypeDef SwapModeMemoryMap() {
     	QSPI_MemoryMappedTypeDef cfg;
@@ -174,19 +198,13 @@ protected:
     }
 
     // ------------------------------------------------------------------------
-    // Function to swap the memory access mode
-    // This function returns the previous memory access mode before switching.
-    // If the mode is already set, no changes are made.
-    //
-    // Parameters:
-    //   Mode - The desired memory access mode (Direct or Indirect)
+    // Function to set the memory access mode to Indirect Mode
     //
     // Returns:
-    //   The previous memory access mode
+    //   HAL_OK if successful, HAL_ERROR if the command fails.
     //
-    inline HAL_StatusTypeDef SwapModeIndirect(){
+    inline HAL_StatusTypeDef setIndirectMode(){
 
-        // Store the current memory access mode before changing it
         return HAL_QSPI_Abort(m_phqspi);      		// Abort any ongoing QSPI operation
      }
 
@@ -200,6 +218,7 @@ protected:
 
 
     QSPI_CommandTypeDef m_Command;            	// Command structure for executing simple QSPI commands without address or data.
+    QSPI_CommandTypeDef m_CommandAddress;      	// Command structure for executing simple QSPI commands with address.
 
     QSPI_CommandTypeDef m_CommandQuadWrite;   	// Command structure for write data.
     QSPI_CommandTypeDef m_CommandQuadRead;    	// Command structure for read data.

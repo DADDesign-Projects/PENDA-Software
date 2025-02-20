@@ -47,13 +47,14 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
 /* Start MX regions */
+  NO_CACHE_RAM	(xrw)	: ORIGIN = 0x24070800, LENGTH = 62K
   DTCMRAM	(xrw)	: ORIGIN = 0x20000000, LENGTH = 128K
   FLASH	(rx)	: ORIGIN = 0x08000000, LENGTH = 128K
   QFLASH	(rx)	: ORIGIN = 0x90000000, LENGTH = 8192K
   RAM_D3	(xrw)	: ORIGIN = 0x38000000, LENGTH = 64K
   ITCMRAM	(xrw)	: ORIGIN = 0x00000000, LENGTH = 64K
   RAM_D2	(xrw)	: ORIGIN = 0x30000000, LENGTH = 288K
-  RAM	(xrw)	: ORIGIN = 0x24000000, LENGTH = 512K
+  RAM	(xrw)	: ORIGIN = 0x24000000, LENGTH = 450K
   SDRAM	(xrw)	: ORIGIN = 0xc0000000, LENGTH = 65536K
 /* End MX regions */
 /*removed by MX default:   RAM_EXEC	(xrw)	: ORIGIN = 0x24000000, LENGTH = 1024K */
@@ -78,7 +79,7 @@ SECTIONS
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >RAM AT> RAM_EXEC
+  } >RAM 
 
   /* Uninitialized data section */
   . = ALIGN(4);
@@ -126,7 +127,7 @@ SECTIONS
   } >DTCMRAM
 
  /*  Unitialized QFLASH section into "QFLASH" QFLASH type memory [MMT section] */
- .QFLASH_Section :
+ .QFLASH_Section (NOLOAD):
   {
     . = ALIGN(4);
     KEEP (*(.QFLASH_Section))
@@ -158,11 +159,17 @@ SECTIONS
   } >RAM_D2
 
  /*  Unitialized SDRAM section into "SDRAM" SDRAM type memory [MMT section] */
- .SDRAM_Section :
+ .SDRAM_Section (NOLOAD) :
   {
     . = ALIGN(4);
     KEEP (*(.SDRAM_Section))
     . = ALIGN(4);
   } >SDRAM
-
+ 
+ .NO_CACHE_RAM_Section :
+  {
+    . = ALIGN(4);
+    KEEP (*(.NO_CACHE_RAM_Section))
+    . = ALIGN(4);
+  } >NO_CACHE_RAM
 }
