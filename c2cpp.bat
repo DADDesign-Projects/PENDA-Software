@@ -1,1 +1,0 @@
-rename .\Core\Src\main.c main.cpp
