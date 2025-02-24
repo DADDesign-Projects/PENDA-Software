@@ -27,8 +27,12 @@
 #include "QSPI.h"
 #include "cEncoder.h"
 
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 #include "Penda.h"
 #include "Vanilla_Extract_20p.h"
+#pragma GCC pop_options
+
 #include <stdio.h>
 
 /* USER CODE END Includes */
@@ -71,7 +75,6 @@ SDRAM_HandleTypeDef hsdram1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
-static void MPU_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_QUADSPI_Init(void);
@@ -86,11 +89,13 @@ static void MX_DMA2D_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-// ---------------------------------------------------------------------------
+// ==** DAD **=================================================================
+
+extern "C" void DAD_MPU_Config(void);
+
 //QFlash
 Dad::cIS25LPxxx __Flash;
 
-// ---------------------------------------------------------------------------
 //GFX
 DECLARE_DISPLAY(__Display);
 DECLARE_LAYER(BackgroundLayer, 320, 240)
@@ -133,29 +138,7 @@ ITCM void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut){
 	__Encoder3Inc += __Encoder3.getIncrement();
 }
 
-// ------------------------------------------------------------------------
-// Function to copy code from Flash to ITCM RAM at startup
-// This ensures that critical code runs from ITCM for better performance.
-//
-// Any critical function that needs to run from ITCM must be preceded by the ITCM macro.
-// Example usage:
-//     ITCM void CriticalFunction() {
-//         // Time-sensitive code
-//     }
-// ------------------------------------------------------------------------
-
-extern uint32_t __sITCM, __eITCM, __lITCM;  // Linker symbols for ITCM section
-
-void Copy_ITCM_Code(void) {
-    uint32_t *pSrc = &__lITCM;  // Source address in Flash (load address)
-    uint32_t *pDest = &__sITCM; // Destination address in ITCM RAM (start of ITCM)
-
-    // Copy the code section from Flash to ITCM RAM
-    while (pDest < &__eITCM) {
-        *pDest++ = *pSrc++;
-    }
-}
-
+// ==End DAD==================================================================
 /* USER CODE END 0 */
 
 /**
@@ -166,16 +149,17 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	Copy_ITCM_Code();
+// ==** DAD **=================================================================
+
+#ifdef USE_RAM
+	SCB->VTOR = 0x24000000;
+#endif
+
+// ===End DAD==================================================================
+
   /* USER CODE END 1 */
 
-  /* MPU Configuration--------------------------------------------------------*/
-  MPU_Config();
-
   /* MCU Configuration--------------------------------------------------------*/
-
-  /* Configure The Vector Table address */
-  SCB->VTOR = 0x08000000;
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
@@ -204,51 +188,52 @@ int main(void)
   MX_DMA2D_Init();
   /* USER CODE BEGIN 2 */
 
-  /* Enable I-Cache---------------------------------------------------------*/
-  SCB_EnableICache();
+  // ==** DAD **=================================================================
 
-  /* Enable D-Cache---------------------------------------------------------*/
-  SCB_EnableDCache();
+  // Performing initializations
+	__Flash.Init(&hqspi); 	// Initialize Flash memory
+	DAD_MPU_Config();		// Initialize MPU
+	SCB_EnableICache(); 	// Enable I-Cache
+	SCB_EnableICache(); 	// Enable D-Cache
+	INIT_DISPLAY(__Display, &hspi1); // Display Initialization
+	// Encoder Initialization
+	__Encoder0.Init(Encoder0_A_GPIO_Port, Encoder0_A_Pin, Encoder0_B_GPIO_Port, Encoder0_B_Pin, Encoder0_SW_GPIO_Port, Encoder0_SW_Pin, 20, 100);
+	__Encoder1.Init(Encoder1_A_GPIO_Port, Encoder1_A_Pin, Encoder1_B_GPIO_Port, Encoder1_B_Pin, Encoder1_SW_GPIO_Port, Encoder1_SW_Pin, 20, 100);
+	__Encoder2.Init(Encoder2_A_GPIO_Port, Encoder2_A_Pin, Encoder2_B_GPIO_Port, Encoder2_B_Pin, Encoder2_SW_GPIO_Port, Encoder2_SW_Pin, 20, 100);
+	__Encoder3.Init(Encoder3_A_GPIO_Port, Encoder3_A_Pin, Encoder3_B_GPIO_Port, Encoder3_B_Pin, Encoder3_SW_GPIO_Port, Encoder3_SW_Pin, 20, 100);
+	StartAudio();					 // Start audio callback
 
-  __Flash.Init(&hqspi);
-
-  INIT_DISPLAY(__Display, &hspi1);
-  __Encoder0.Init(Encoder0_A_GPIO_Port, Encoder0_A_Pin, Encoder0_B_GPIO_Port, Encoder0_B_Pin, Encoder0_SW_GPIO_Port, Encoder0_SW_Pin, 20, 100);
-  __Encoder1.Init(Encoder1_A_GPIO_Port, Encoder1_A_Pin, Encoder1_B_GPIO_Port, Encoder1_B_Pin, Encoder1_SW_GPIO_Port, Encoder1_SW_Pin, 20, 100);
-  __Encoder2.Init(Encoder2_A_GPIO_Port, Encoder2_A_Pin, Encoder2_B_GPIO_Port, Encoder2_B_Pin, Encoder2_SW_GPIO_Port, Encoder2_SW_Pin, 20, 100);
-  __Encoder3.Init(Encoder3_A_GPIO_Port, Encoder3_A_Pin, Encoder3_B_GPIO_Port, Encoder3_B_Pin, Encoder3_SW_GPIO_Port, Encoder3_SW_Pin, 20, 100);
-  StartAudio();
-
-  __Display.setOrientation(Rotation::Degre_90);
-  DadGFX::cLayer* pBackground = ADD_LAYER(BackgroundLayer, 0, 0, 1);
-  pBackground->drawFillRect(0,0,320, 240, DadGFX::sColor(9, 111, 148, 255));
-  pBackground->drawFillRect(80, 0, 80, 240, DadGFX::sColor(23, 148, 194, 255));
-  pBackground->drawFillRect(240, 0, 240, 240, DadGFX::sColor(23, 148, 194, 255));
+    // Display demo
+	__Display.setOrientation(Rotation::Degre_90);
+	DadGFX::cLayer* pBackground = ADD_LAYER(BackgroundLayer, 0, 0, 1);
+	pBackground->drawFillRect(0,0,320, 240, DadGFX::sColor(9, 111, 148, 255));
+	pBackground->drawFillRect(80, 0, 80, 240, DadGFX::sColor(23, 148, 194, 255));
+	pBackground->drawFillRect(240, 0, 240, 240, DadGFX::sColor(23, 148, 194, 255));
 
 
-  DadGFX::cLayer* pRacquet = ADD_LAYER(RacquetLayer, 0, 0, 11);
-  pRacquet->drawFillRect(0,0,6,40, DadGFX::sColor(255, 255, 255, 255));
+	DadGFX::cLayer* pRacquet = ADD_LAYER(RacquetLayer, 0, 0, 11);
+	pRacquet->drawFillRect(0,0,6,40, DadGFX::sColor(255, 255, 255, 255));
 
-  DadGFX::cLayer* pBall = ADD_LAYER(BallLayer, 0, 0, 10);
-  pBall->drawFillCircle(7,7,7,DadGFX::sColor(255, 255, 255,255));
+	DadGFX::cLayer* pBall = ADD_LAYER(BallLayer, 0, 0, 10);
+	pBall->drawFillCircle(7,7,7,DadGFX::sColor(255, 255, 255,255));
 
-  DadGFX::cImageLayer* pPenda = __Display.addLayer(Penda_map, 70, 20, 80, 80, 8);
-  // If you use flash memory storage
-  //DadGFX::cImageLayer* pPenda = __Display.addLayer(__FlashStorage.GetFilePtr("Penda.png"), 70, 20, 80, 80, 8);
+	DadGFX::cImageLayer* pPenda = __Display.addLayer(Penda_map, 70, 20, 80, 80, 8);
+	// If you use flash memory storage
+	//DadGFX::cImageLayer* pPenda = __Display.addLayer(__FlashStorage.GetFilePtr("Penda.png"), 70, 20, 80, 80, 8);
 
-  DadGFX::cFont Vanilla(&__Vanilla_Extract_20p);
-  // If you use flash memory storage
-  //DadGFX::GFXBinFont * pBinFont = (DadGFX::GFXBinFont *)__FlashStorage.GetFilePtr("Vanilla_Extract_20p.bin");
-  //DadGFX::cFont Vanilla(pBinFont);
-  DadGFX::cLayer* pText = ADD_LAYER(TextLayer, 20, 160, 2);
-  pText->setFont(&Vanilla);
-  pText->setCursor(0,0);
-  pText->setTextFrontColor(DadGFX::sColor(255,255,255,100));
-  pText->drawText("Demo");
-  pText->setCursor(0,Vanilla.getHeight());
-  pText->drawText("PENDA Generic");
+	DadGFX::cFont Vanilla(&__Vanilla_Extract_20p);
+	// If you use flash memory storage
+	//DadGFX::GFXBinFont * pBinFont = (DadGFX::GFXBinFont *)__FlashStorage.GetFilePtr("Vanilla_Extract_20p.bin");
+	//DadGFX::cFont Vanilla(pBinFont);
+	DadGFX::cLayer* pText = ADD_LAYER(TextLayer, 20, 160, 2);
+	pText->setFont(&Vanilla);
+	pText->setCursor(0,0);
+	pText->setTextFrontColor(DadGFX::sColor(255,255,255,100));
+	pText->drawText("Demo");
+	pText->setCursor(0,Vanilla.getHeight());
+	pText->drawText("PENDA Generic");
 
-  __Display.flush();
+	__Display.flush();
 
   /* USER CODE END 2 */
 
@@ -264,7 +249,6 @@ int main(void)
   int16_t XPenda = 20;
   int16_t YPenda = 70;
   uint8_t  Move = 0;
-  char Buffer[40];
   while (1)
   {
     /* USER CODE END WHILE */
@@ -341,6 +325,7 @@ int main(void)
       __Display.flush();
       HAL_Delay(10);
   }
+  // ==End DAD=================================================================
   /* USER CODE END 3 */
 }
 
@@ -826,123 +811,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
- /* MPU Configuration */
-
-void MPU_Config(void)
-{
-  MPU_Region_InitTypeDef MPU_InitStruct = {0};
-
-  /* Disables the MPU */
-  HAL_MPU_Disable();
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-  MPU_InitStruct.Number = MPU_REGION_NUMBER0;
-  MPU_InitStruct.BaseAddress = 0x0;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_4GB;
-  MPU_InitStruct.SubRegionDisable = 0x87;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
-  MPU_InitStruct.AccessPermission = MPU_REGION_NO_ACCESS;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER1;
-  MPU_InitStruct.BaseAddress = 0x08000000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_128KB;
-  MPU_InitStruct.SubRegionDisable = 0x0;
-  MPU_InitStruct.AccessPermission = MPU_REGION_PRIV_RO;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_CACHEABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER2;
-  MPU_InitStruct.BaseAddress = 0x24070800;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_2KB;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
-  MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER3;
-  MPU_InitStruct.BaseAddress = 0x24071000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_4KB;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER4;
-  MPU_InitStruct.BaseAddress = 0x24072000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_8KB;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER5;
-  MPU_InitStruct.BaseAddress = 0x24074000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_16KB;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER6;
-  MPU_InitStruct.BaseAddress = 0x24078000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_32KB;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER7;
-  MPU_InitStruct.BaseAddress = 0x30000000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_512KB;
-  MPU_InitStruct.SubRegionDisable = 0xE0;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER8;
-  MPU_InitStruct.BaseAddress = 0x90000000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_8MB;
-  MPU_InitStruct.SubRegionDisable = 0x0;
-  MPU_InitStruct.AccessPermission = MPU_REGION_PRIV_RO_URO;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Number = MPU_REGION_NUMBER9;
-  MPU_InitStruct.BaseAddress = 0xC0000000;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_64MB;
-  MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* Enables the MPU */
-  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
-}
 
 /**
   * @brief  This function is executed in case of error occurrence.

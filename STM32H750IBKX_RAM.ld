@@ -35,36 +35,102 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = ORIGIN(RAM) + LENGTH(RAM);    /* end of RAM */
+_estack = ORIGIN(DTCMRAM) + LENGTH(DTCMRAM);    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x200;      /* required amount of heap  */
-_Min_Stack_Size = 0x400; /* required amount of stack */
-/* Start user variables */
-
-/* End user variables */
+_Min_Heap_Size = 0x8000;      /* required amount of heap  */
+_Min_Stack_Size = 0x8000; /* required amount of stack */
 
 /* Specify the memory areas */
 MEMORY
 {
-/* Start MX regions */
-  DTCMRAM	(xrw)	: ORIGIN = 0x20000000, LENGTH = 128K
-  FLASH	(rx)	: ORIGIN = 0x08000000, LENGTH = 128K
-  QFLASH	(rx)	: ORIGIN = 0x90000000, LENGTH = 8192K
-  RAM_D3	(xrw)	: ORIGIN = 0x38000000, LENGTH = 64K
-  ITCMRAM	(xrw)	: ORIGIN = 0x00000000, LENGTH = 64K
-  RAM_D2	(xrw)	: ORIGIN = 0x30000000, LENGTH = 288K
-  RAM	(xrw)	: ORIGIN = 0x24000000, LENGTH = 512K
-  SDRAM	(xrw)	: ORIGIN = 0xc0000000, LENGTH = 65536K
-/* End MX regions */
-/*removed by MX default:   RAM_EXEC	(xrw)	: ORIGIN = 0x24000000, LENGTH = 1024K */
+  FLASH (rx)     : ORIGIN = 0x08000000, LENGTH = 128K
+  DTCMRAM (xrw)   : ORIGIN = 0x20000000, LENGTH = 128K
+  RAM_D2 (xrw)    : ORIGIN = 0x30000000, LENGTH = 288K
+  RAM_D3 (xrw)    : ORIGIN = 0x38000000, LENGTH = 64K
+  ITCMRAM (xrw)   : ORIGIN = 0x00000000, LENGTH = 64K
+  RAM_EXEC (xrw)  : ORIGIN = 0x24000000, LENGTH = 448K
+  RAM_NO_CACHE	(xrw) : ORIGIN = 0x24070000, LENGTH = 64K
+  QFLASH (rx)		 : ORIGIN = 0x90000000, LENGTH = 7M
+  QFLASH_LOADER (rx) : ORIGIN = 0x90700000, LENGTH = 1M
+  SDRAM	(xrw)		 : ORIGIN = 0xc0000000, LENGTH = 64M
 }
 
 /* Define output sections */
 SECTIONS
 {
-  
-  
-  
+  /* The startup code goes first into RAM_EXEC */
+  .isr_vector :
+  {
+    . = ALIGN(4);
+    KEEP(*(.isr_vector)) /* Startup code */
+    . = ALIGN(4);
+  } >RAM_EXEC
+
+  /* The program code and other data goes into RAM_EXEC */
+  .text :
+  {
+    . = ALIGN(4);
+    
+    *(EXCLUDE_FILE(*DAD_STM_GFX2/Src/*.o) .text)
+    *(EXCLUDE_FILE(*DAD_STM_GFX2/Src/*.o) .text*)
+
+    *(.glue_7)         /* glue arm to thumb code */
+    *(.glue_7t)        /* glue thumb to arm code */
+    *(.eh_frame)
+    *(.RamFunc)        /* .RamFunc sections */
+    *(.RamFunc*)       /* .RamFunc* sections */
+
+    KEEP (*(.init))
+    KEEP (*(.fini))
+
+    . = ALIGN(4);
+    _etext = .;        /* define a global symbols at end of code */
+     
+  } >RAM_EXEC
+
+  /* Constant data goes into RAM_EXEC */
+  .rodata :
+  {
+    . = ALIGN(4);
+    *(.rodata)         /* .rodata sections (constants, strings, etc.) */
+    *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
+    . = ALIGN(4);
+  } >RAM_EXEC
+
+  .ARM.extab (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  {
+    *(.ARM.extab* .gnu.linkonce.armextab.*)
+  } >RAM_EXEC
+  .ARM (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  {
+    __exidx_start = .;
+    *(.ARM.exidx*)
+    __exidx_end = .;
+  } >RAM_EXEC
+
+  .preinit_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  {
+    PROVIDE_HIDDEN (__preinit_array_start = .);
+    KEEP (*(.preinit_array*))
+    PROVIDE_HIDDEN (__preinit_array_end = .);
+  } >RAM_EXEC
+
+  .init_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  {
+    PROVIDE_HIDDEN (__init_array_start = .);
+    KEEP (*(SORT(.init_array.*)))
+    KEEP (*(.init_array*))
+    PROVIDE_HIDDEN (__init_array_end = .);
+  } >RAM_EXEC
+
+  .fini_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+  {
+    PROVIDE_HIDDEN (__fini_array_start = .);
+    KEEP (*(SORT(.fini_array.*)))
+    KEEP (*(.fini_array*))
+    PROVIDE_HIDDEN (__fini_array_end = .);
+  } >RAM_EXEC
+
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 
@@ -78,8 +144,24 @@ SECTIONS
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >RAM AT> RAM_EXEC
+  } >DTCMRAM AT> RAM_EXEC
+ 
+ /* DADD ITCM Section ========================================================== */
+  __lITCM = LOADADDR(.ITCMRAM_Section);
+  .ITCMRAM_Section :
+  {
+      . = ALIGN(4);
+    __sITCM = .;
+    *(.moveITCM)
+    *DAD_STM_GFX2/Src/*.o (.text)
+    *DAD_STM_GFX2/Src/*.o (.text*)
 
+    . = ALIGN(4);
+    __eITCM = .;
+  } >ITCMRAM AT> RAM_EXEC
+
+/* ======================================================================== */  
+  
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
@@ -94,7 +176,7 @@ SECTIONS
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
-  } >RAM
+  } >DTCMRAM
 
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
@@ -105,8 +187,32 @@ SECTIONS
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
-  } >RAM
+  } >DTCMRAM
+  
+  /* DADD Sections ========================================================== */
+  .RAM_NO_CACHE_Section :
+  {
+    . = ALIGN(4);
+    KEEP (*(.RAM_NO_CACHE_Section))
+    . = ALIGN(4);
+  } >RAM_NO_CACHE
+  
+ .QFLASH_Section (NOLOAD):
+  {
+    . = ALIGN(4);
+    KEEP (*(.QFLASH_Section))
+    . = ALIGN(4);
+  } >QFLASH
 
+ .SDRAM_Section (NOLOAD):
+  {
+    . = ALIGN(4);
+    KEEP (*(.SDRAM_Section))
+    . = ALIGN(4);
+  } >SDRAM
+  
+  /* ======================================================================== */  
+    
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {
@@ -116,53 +222,4 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
-
- /*  Unitialized DTCMRAM section into "DTCMRAM" DTCMRAM type memory [MMT section] */
- .DTCMRAM_Section :
-  {
-    . = ALIGN(4);
-    KEEP (*(.DTCMRAM_Section))
-    . = ALIGN(4);
-  } >DTCMRAM
-
- /*  Unitialized QFLASH section into "QFLASH" QFLASH type memory [MMT section] */
- .QFLASH_Section :
-  {
-    . = ALIGN(4);
-    KEEP (*(.QFLASH_Section))
-    . = ALIGN(4);
-  } >QFLASH
-
- /*  Unitialized RAM_D3 section into "RAM_D3" RAM_D3 type memory [MMT section] */
- .RAM_D3_Section :
-  {
-    . = ALIGN(4);
-    KEEP (*(.RAM_D3_Section))
-    . = ALIGN(4);
-  } >RAM_D3
-
- /*  Unitialized ITCMRAM section into "ITCMRAM" ITCMRAM type memory [MMT section] */
- .ITCMRAM_Section :
-  {
-    . = ALIGN(4);
-    KEEP (*(.ITCMRAM_Section))
-    . = ALIGN(4);
-  } >ITCMRAM
-
- /*  Unitialized RAM_D2 section into "RAM_D2" RAM_D2 type memory [MMT section] */
- .RAM_D2_Section :
-  {
-    . = ALIGN(4);
-    KEEP (*(.RAM_D2_Section))
-    . = ALIGN(4);
-  } >RAM_D2
-
- /*  Unitialized SDRAM section into "SDRAM" SDRAM type memory [MMT section] */
- .SDRAM_Section :
-  {
-    . = ALIGN(4);
-    KEEP (*(.SDRAM_Section))
-    . = ALIGN(4);
-  } >SDRAM
-
 }

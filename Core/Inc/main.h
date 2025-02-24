@@ -100,8 +100,8 @@ void Error_Handler(void);
 /* Sections ---------------------------------------------------------*/
 #define SDRAM_SECTION __attribute__((section(".SDRAM_Section")))
 #define QFLASH_SECTION __attribute__((section(".QFLASH_Section")))
-#define NO_CACHE_RAM __attribute__((section(".NO_CACHE_RAM_Section")))
-#define ITCM __attribute__((section(".RAM_ITCM0_Section")))
+#define NO_CACHE_RAM __attribute__((section(".RAM_NO_CACHE_Section")))
+#define ITCM __attribute__((section(".moveITCM")))
 
 
 /* Audio ---------------------------------------------------------*/
