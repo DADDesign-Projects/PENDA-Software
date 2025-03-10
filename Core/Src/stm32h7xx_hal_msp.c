@@ -78,65 +78,65 @@ void HAL_MspInit(void)
 }
 
 /**
-* @brief DMA2D MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hdma2d: DMA2D handle pointer
-* @retval None
-*/
+  * @brief DMA2D MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hdma2d: DMA2D handle pointer
+  * @retval None
+  */
 void HAL_DMA2D_MspInit(DMA2D_HandleTypeDef* hdma2d)
 {
   if(hdma2d->Instance==DMA2D)
   {
-  /* USER CODE BEGIN DMA2D_MspInit 0 */
+    /* USER CODE BEGIN DMA2D_MspInit 0 */
 
-  /* USER CODE END DMA2D_MspInit 0 */
+    /* USER CODE END DMA2D_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_DMA2D_CLK_ENABLE();
-  /* USER CODE BEGIN DMA2D_MspInit 1 */
+    /* USER CODE BEGIN DMA2D_MspInit 1 */
 
-  /* USER CODE END DMA2D_MspInit 1 */
+    /* USER CODE END DMA2D_MspInit 1 */
 
   }
 
 }
 
 /**
-* @brief DMA2D MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param hdma2d: DMA2D handle pointer
-* @retval None
-*/
+  * @brief DMA2D MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hdma2d: DMA2D handle pointer
+  * @retval None
+  */
 void HAL_DMA2D_MspDeInit(DMA2D_HandleTypeDef* hdma2d)
 {
   if(hdma2d->Instance==DMA2D)
   {
-  /* USER CODE BEGIN DMA2D_MspDeInit 0 */
+    /* USER CODE BEGIN DMA2D_MspDeInit 0 */
 
-  /* USER CODE END DMA2D_MspDeInit 0 */
+    /* USER CODE END DMA2D_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_DMA2D_CLK_DISABLE();
-  /* USER CODE BEGIN DMA2D_MspDeInit 1 */
+    /* USER CODE BEGIN DMA2D_MspDeInit 1 */
 
-  /* USER CODE END DMA2D_MspDeInit 1 */
+    /* USER CODE END DMA2D_MspDeInit 1 */
   }
 
 }
 
 /**
-* @brief QSPI MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hqspi: QSPI handle pointer
-* @retval None
-*/
+  * @brief QSPI MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hqspi: QSPI handle pointer
+  * @retval None
+  */
 void HAL_QSPI_MspInit(QSPI_HandleTypeDef* hqspi)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
   if(hqspi->Instance==QUADSPI)
   {
-  /* USER CODE BEGIN QUADSPI_MspInit 0 */
+    /* USER CODE BEGIN QUADSPI_MspInit 0 */
 
-  /* USER CODE END QUADSPI_MspInit 0 */
+    /* USER CODE END QUADSPI_MspInit 0 */
 
   /** Initializes the peripherals clock
   */
@@ -184,27 +184,27 @@ void HAL_QSPI_MspInit(QSPI_HandleTypeDef* hqspi)
     /* QUADSPI interrupt Init */
     HAL_NVIC_SetPriority(QUADSPI_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(QUADSPI_IRQn);
-  /* USER CODE BEGIN QUADSPI_MspInit 1 */
+    /* USER CODE BEGIN QUADSPI_MspInit 1 */
 
-  /* USER CODE END QUADSPI_MspInit 1 */
+    /* USER CODE END QUADSPI_MspInit 1 */
 
   }
 
 }
 
 /**
-* @brief QSPI MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param hqspi: QSPI handle pointer
-* @retval None
-*/
+  * @brief QSPI MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hqspi: QSPI handle pointer
+  * @retval None
+  */
 void HAL_QSPI_MspDeInit(QSPI_HandleTypeDef* hqspi)
 {
   if(hqspi->Instance==QUADSPI)
   {
-  /* USER CODE BEGIN QUADSPI_MspDeInit 0 */
+    /* USER CODE BEGIN QUADSPI_MspDeInit 0 */
 
-  /* USER CODE END QUADSPI_MspDeInit 0 */
+    /* USER CODE END QUADSPI_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_QSPI_CLK_DISABLE();
 
@@ -223,28 +223,28 @@ void HAL_QSPI_MspDeInit(QSPI_HandleTypeDef* hqspi)
 
     /* QUADSPI interrupt DeInit */
     HAL_NVIC_DisableIRQ(QUADSPI_IRQn);
-  /* USER CODE BEGIN QUADSPI_MspDeInit 1 */
+    /* USER CODE BEGIN QUADSPI_MspDeInit 1 */
 
-  /* USER CODE END QUADSPI_MspDeInit 1 */
+    /* USER CODE END QUADSPI_MspDeInit 1 */
   }
 
 }
 
 /**
-* @brief SPI MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hspi: SPI handle pointer
-* @retval None
-*/
+  * @brief SPI MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hspi: SPI handle pointer
+  * @retval None
+  */
 void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
   if(hspi->Instance==SPI1)
   {
-  /* USER CODE BEGIN SPI1_MspInit 0 */
+    /* USER CODE BEGIN SPI1_MspInit 0 */
 
-  /* USER CODE END SPI1_MspInit 0 */
+    /* USER CODE END SPI1_MspInit 0 */
 
   /** Initializes the peripherals clock
   */
@@ -300,27 +300,27 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     /* SPI1 interrupt Init */
     HAL_NVIC_SetPriority(SPI1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(SPI1_IRQn);
-  /* USER CODE BEGIN SPI1_MspInit 1 */
+    /* USER CODE BEGIN SPI1_MspInit 1 */
 
-  /* USER CODE END SPI1_MspInit 1 */
+    /* USER CODE END SPI1_MspInit 1 */
 
   }
 
 }
 
 /**
-* @brief SPI MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param hspi: SPI handle pointer
-* @retval None
-*/
+  * @brief SPI MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hspi: SPI handle pointer
+  * @retval None
+  */
 void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
 {
   if(hspi->Instance==SPI1)
   {
-  /* USER CODE BEGIN SPI1_MspDeInit 0 */
+    /* USER CODE BEGIN SPI1_MspDeInit 0 */
 
-  /* USER CODE END SPI1_MspDeInit 0 */
+    /* USER CODE END SPI1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_SPI1_CLK_DISABLE();
 
@@ -337,9 +337,9 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
 
     /* SPI1 interrupt DeInit */
     HAL_NVIC_DisableIRQ(SPI1_IRQn);
-  /* USER CODE BEGIN SPI1_MspDeInit 1 */
+    /* USER CODE BEGIN SPI1_MspDeInit 1 */
 
-  /* USER CODE END SPI1_MspDeInit 1 */
+    /* USER CODE END SPI1_MspDeInit 1 */
   }
 
 }
