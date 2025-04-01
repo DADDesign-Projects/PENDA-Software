@@ -1,4 +1,5 @@
 # PENDA Software
+![Image1](Media/Penda_1.jpg)
 
 ## Introduction
 PENDA Software is an advanced framework tailored for the **PENDA Hardware** platform, enabling effortless development of high-quality audio effect pedals. Designed to streamline development, it allows creators to focus entirely on signal processing while the framework manages hardware complexities.
@@ -32,4 +33,5 @@ PENDA Software is released under the **MIT License**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
- 
+## Images
+![Image1](Media/Penda_1.jpg)
