@@ -2,7 +2,7 @@
 ![Image1](Media/Penda_1.jpg)
 
 ## Introduction
-PENDA Software is an advanced framework tailored for the **PENDA Hardware** platform, enabling effortless development of high-quality audio effect pedals. Designed to streamline development, it allows creators to focus entirely on signal processing while the framework manages hardware complexities.
+PENDA Software is an advanced framework tailored for the **PENDA Hardware** platform [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware), enabling effortless development of high-quality audio effect pedals. Designed to streamline development, it allows creators to focus entirely on signal processing while the framework manages hardware complexities.
 
 ## Author
 This project is developed by DAD Design.
