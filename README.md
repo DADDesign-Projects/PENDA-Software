@@ -33,5 +33,43 @@ PENDA Software is released under the **MIT License**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Images
-![Image1](Media/Penda_1.jpg)
+## TREMOLO DEMO
+### Encoder Controls
+
+- **Encoder 0 (Right):**  
+  Scroll through the menu
+
+- **Encoders 1/2/3 (Above display):**  
+  Adjust the displayed parameter below  
+  *(Pro tip: Press + turn simultaneously for precision adjustment)*
+
+### Memory Screen Functions
+- **Encoder 1 (Top left):** Select function → `Save` / `Restore` / `Erase`
+- **Encoder 2 (Top center):** Select target memory slot
+- **Encoder 3 (Top right):**  
+  - Switch to `Yes` to confirm  
+  - Press to execute action
+
+> **Important Notes:**  
+> - Cannot erase currently active memory  
+> - Cannot restore/erase never-saved slots
+
+### Footswitch Controls
+
+#### Footswitch 1
+- **Short press:** Cycle memory presets  
+- **Long press (1.5s):** Toggle effect On/Off
+
+#### Footswitch 2
+- **Tap tempo:** Controls tremolo rate
+
+### GUI Screenshot
+![Image1](Media/PENDA_UI_1.jpg)
+
+![Image2](Media/PENDA_UI_2.jpg)
+
+![Image3](Media/PENDA_UI_3.jpg)
+
+
+
+
