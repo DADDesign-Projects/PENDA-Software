@@ -21,19 +21,16 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "cIS25LPxxx.h"
-
 #include "cDisplay.h"
-#include "QSPI.h"
+
 #include "cEncoder.h"
-
-#pragma GCC push_options
-#pragma GCC optimize ("O0")
-#include "Penda.h"
-#include "Vanilla_Extract_20p.h"
-#pragma GCC pop_options
-
-#include <stdio.h>
+#include "cIS25LPxxx.h"
+#include "cMemory.h"
+#include "QSPI.h"
+#include "PendaUI.h"
+#include "UIComponent.h"
+#include "Parameter.h"
+#include "cDCO.h"
 
 /* USER CODE END Includes */
 
@@ -82,56 +79,106 @@ void PeriphCommonClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-// ==** DAD **=================================================================
+// =====** DAD **=================================================================
 
 extern "C" void DAD_MPU_Config(void);
 
 //QFlash
-Dad::cIS25LPxxx __Flash;
+DadQSPI::cIS25LPxxx __Flash;
 
 //GFX
 DECLARE_DISPLAY(__Display);
-DECLARE_LAYER(BackgroundLayer, 320, 240)
-DECLARE_LAYER(BallLayer, 16, 16)
-DECLARE_LAYER(RacquetLayer, 6, 40)
-DECLARE_LAYER(TextLayer, 250, 100)
+DECLARE_LAYER(Back, TFT_HEIGHT , TFT_WIDTH);
 
-//QSPI FlasherStorage
-DadQSPI::cQSPI_FlasherStorage QFLASH_SECTION __FlashStorage;
+//QSPI Storage
+QFLASH_SECTION DadQSPI::cQSPI_FlasherStorage  __FlashStorage;
+DadQSPI::cQSPI_PersistentStorage 			  __PersistentStorage;
 
-//Encoders
-DadUI::cEncoder __Encoder0;
-DadUI::cEncoder __Encoder1;
-DadUI::cEncoder __Encoder2;
-DadUI::cEncoder __Encoder3;
+// LFO
+DadDSP::cDCO __LFO;
 
-int16_t __Encoder0Inc;
-int16_t __Encoder1Inc;
-int16_t __Encoder2Inc;
-int16_t __Encoder3Inc;
+// UI Object Manager
+DadUI::cUIObjectManager __UIObjManager;
+
+// Main params
+DadUI::cParameter __ParamDepth;
+
+// LFO params
+DadUI::cParameter __ParamShape;
+DadUI::cParameter __ParamSpeed;
+DadUI::cParameter __ParamRatio;
+
 
 // ------------------------------------------------------------------------
-// AudioCallback
+// Parameter callback
 // ------------------------------------------------------------------------
-ITCM void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut){
-	for (size_t i = 0; i < AUDIO_BUFFER_SIZE; i++)
-	{
-		pOut->Right = pIn->Right;
-		pOut->Left = pIn->Left;
-		pOut++;
-		pIn++;
-	}
-	__Encoder0.Debounce();
-	__Encoder1.Debounce();
-	__Encoder2.Debounce();
-	__Encoder3.Debounce();
-	__Encoder0Inc += __Encoder0.getIncrement();
-	__Encoder1Inc += __Encoder1.getIncrement();
-	__Encoder2Inc += __Encoder2.getIncrement();
-	__Encoder3Inc += __Encoder3.getIncrement();
+
+// ------------------------------------------------------------------------
+// SpeedChange
+void SpeedChange(float Value){
+	__LFO.setFreq(Value);
 }
 
-// ==End DAD==================================================================
+// ------------------------------------------------------------------------
+// Ratio change
+void RatioChange(float Value){
+	__LFO.setNormalizedDutyCycle(__ParamRatio.getNormalizedValue());
+}
+
+// ------------------------------------------------------------------------
+// AudioCallback - Processes audio in real-time (called by the audio engine)
+// ------------------------------------------------------------------------
+bool __MemOnOff = false; 	// Global state variable: Tracks whether audio processing is active
+uint32_t __CT=0; 			// Cycle counter
+							// - Used in main loop to blink an activity LED
+ 	 	 	 	 	 	 	// - The LED blink rate indicates proper callback execution
+
+// ITCM: Optimized for fast execution (placed in Instruction Tightly Coupled Memory)
+ITCM void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut) {
+    // Get the current ON/OFF state from the UI (real-time safe)
+    bool OnOff = DadUI::cPendaUI::RTProcess();
+
+    // Process each sample in the audio buffer
+    for (size_t i = 0; i < AUDIO_BUFFER_SIZE; i++) {
+        // Detect state change only when audio is near silence (avoid clicks)
+        if ((OnOff != __MemOnOff) && (fabs(pIn->Right + pIn->Left) < 0.001f)) {
+            __MemOnOff = OnOff; // Update state if crossing threshold
+        }
+
+        // Apply processing if active
+        if (__MemOnOff) {
+            __LFO.Step(); // Advance LFO to next step
+
+            float LFOVal = 0;
+            // Select LFO waveform based on parameter
+            switch ((uint16_t)__ParamShape) {
+                case 0: // Sine wave
+                    LFOVal = __LFO.getTriangleModValue();
+                    break;
+                case 1: // Square wave
+                    LFOVal = __LFO.getSquareModValue();
+                    break;
+            }
+
+            // Apply modulated gain to audio (LFO * depth control)
+            pOut->Right = pIn->Right * LFOVal * std::pow(10.0f,(1 - __ParamDepth.getNormalizedValue()) * -12 / 20.0f);
+            pOut->Left = pIn->Left * LFOVal * std::pow(10.0f, (1-__ParamDepth.getNormalizedValue()) *  -12/ 20.0f);
+        } else {
+            // Bypass processing (pass-through)
+            pOut->Right = pIn->Right;
+            pOut->Left = pIn->Left;
+        }
+
+        // Advance buffer pointers (post-increment)
+        pOut++;
+        pIn++;
+    }
+
+    // Increment cycle counter for visual feedback:
+    __CT++;
+}
+
+// ===** End DAD **==================================================================
 /* USER CODE END 0 */
 
 /**
@@ -142,13 +189,13 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-// ==** DAD **=================================================================
+// =====** DAD **=================================================================
 
 #ifdef USE_RAM
 	SCB->VTOR = 0x24000000;
 #endif
 
-// ===End DAD==================================================================
+// ===** End DAD **==================================================================
 
   /* USER CODE END 1 */
 
@@ -181,144 +228,147 @@ int main(void)
   MX_DMA2D_Init();
   /* USER CODE BEGIN 2 */
 
-  // ==** DAD **=================================================================
+// =====** DAD **=================================================================
 
-  // Performing initializations
-	__Flash.Init(&hqspi); 	// Initialize Flash memory
-	DAD_MPU_Config();		// Initialize MPU
-	SCB_EnableICache(); 	// Enable I-Cache
-	SCB_EnableICache(); 	// Enable D-Cache
-	INIT_DISPLAY(__Display, &hspi1); // Display Initialization
-	// Encoder Initialization
-	__Encoder0.Init(Encoder0_A_GPIO_Port, Encoder0_A_Pin, Encoder0_B_GPIO_Port, Encoder0_B_Pin, Encoder0_SW_GPIO_Port, Encoder0_SW_Pin, 20, 100);
-	__Encoder1.Init(Encoder1_A_GPIO_Port, Encoder1_A_Pin, Encoder1_B_GPIO_Port, Encoder1_B_Pin, Encoder1_SW_GPIO_Port, Encoder1_SW_Pin, 20, 100);
-	__Encoder2.Init(Encoder2_A_GPIO_Port, Encoder2_A_Pin, Encoder2_B_GPIO_Port, Encoder2_B_Pin, Encoder2_SW_GPIO_Port, Encoder2_SW_Pin, 20, 100);
-	__Encoder3.Init(Encoder3_A_GPIO_Port, Encoder3_A_Pin, Encoder3_B_GPIO_Port, Encoder3_B_Pin, Encoder3_SW_GPIO_Port, Encoder3_SW_Pin, 20, 100);
-	StartAudio();					 // Start audio callback
+  // Performing initializations -----------------------
+  DAD_MPU_Config();				// Initialize MPU
+  __Flash.Init(&hqspi); 		// Initialize Flash memory
 
-    // Display demo
-	__Display.setOrientation(Rotation::Degre_90);
-	DadGFX::cLayer* pBackground = ADD_LAYER(BackgroundLayer, 0, 0, 1);
-	pBackground->drawFillRect(0,0,320, 240, DadGFX::sColor(9, 111, 148, 255));
-	pBackground->drawFillRect(80, 0, 80, 240, DadGFX::sColor(23, 148, 194, 255));
-	pBackground->drawFillRect(240, 0, 240, 240, DadGFX::sColor(23, 148, 194, 255));
+  SCB_EnableICache(); 			// Enable I-Cache
+  SCB_EnableICache(); 			// Enable D-Cache
+
+  // Display Initializations
+  INIT_DISPLAY(__Display, &hspi1);
+  __Display.setOrientation(Rotation::Degre_90);
+  DadGFX::cLayer *pBack = ADD_LAYER(Back, 0,0,1);
+  DadGFX::cFont Font(FONTL);
+
+  // PersistentStorage initialization
+  if(__PersistentStorage.Init()){
+		pBack->eraseLayer(SPLASHSCREEN_BACK_COLOR);
+
+	    const uint16_t TextCentre = 320/2;
+	    pBack->setTextFrontColor(SPLASHSCREEN_TEXT_COLOR);
+	    pBack->setFont(&Font);
+
+	    const char *pText1 = "Please wait (~60s)";
+	    uint16_t TextWidth = pBack->getTextWidth(pText1);
+	    pBack->setCursor(TextCentre - (TextWidth/2), 40);
+	    pBack->drawText(pText1);
+
+	    const char *pText2 = "Flash memory";
+	    TextWidth = pBack->getTextWidth(pText2);
+	    pBack->setCursor(TextCentre - (TextWidth/2), 80);
+	    pBack->drawText(pText2);
+
+	    const char *pText3 = "initialization";
+	    TextWidth = pBack->getTextWidth(pText3 );
+	    pBack->setCursor(TextCentre - (TextWidth/2), 120);
+	    pBack->drawText(pText3 );
+
+	    const char *pText4 = "in progress.";
+	    TextWidth = pBack->getTextWidth(pText4);
+	    pBack->setCursor(TextCentre - (TextWidth/2), 160);
+	    pBack->drawText(pText4);
+
+	    __Display.flush();
+	    __PersistentStorage.InitializeMemory();
+  }
+  pBack->eraseLayer(DadGFX::sColor(0,0,0,255));
+
+  // GUI Initializations
+  DadUI::cPendaUI::Init("Demo", "Tremolo", "Version 1.0");
+
+  __ParamDepth.Init(50.0f, 0.0f, 100.0f,    // float InitValue, float Min, float Max,
+			  5.0f, 1.0f,     		 	 	// float RapidIncrement, float SlowIncrement,
+			  nullptr,       				// CallbackType Callback = nullptr,
+			  0.2f * UI_RT_SAMPLING_RATE);	// float Slope = 0.1s);
+
+  __ParamShape.Init(0.0f, 0.0f, 1.0f,   	// float InitValue, float Min, float Max,
+			  1.0f, 1.0f, 	 				// float RapidIncrement, float SlowIncrement,
+			  nullptr,   	 				// CallbackType Callback = nullptr,
+			  0);		 	 				// float Slope = 0);
+
+  __ParamSpeed.Init(5.0f, 1.0, 10.0f,  		// float InitValue, float Min, float Max,
+			  0.5f, 0.05f, 	 			    // float RapidIncrement, float SlowIncrement,
+			  SpeedChange,	 			    // CallbackType Callback = nullptr,
+			  0);		 	 			    // float Slope = 0, float SamplingRate=SAMPLING_RATE);
+
+  __ParamRatio.Init(0, -100, +100,			// float InitValue, float Min, float Max,
+			  5.0f, 1.0f, 			        // float RapidIncrement, float SlowIncrement,
+			  RatioChange,     				// CallbackType Callback = nullptr,
+			  0);		     				// float Slope = 0, float SamplingRate=SAMPLING_RATE);
+
+  DadUI::cParameterNumNormalView 		DeepView;
+  DadUI::cParameterDiscretView	 		ShapeView;
+  DadUI::cParameterNumNormalView		SpeedView;
+  DadUI::cParameterNumLeftRightView		RatioView;
+
+  DeepView.Init(&__ParamDepth, "Depth", "Depth",
+  	  	  	  	  "%", "%");
+
+  SpeedView.Init(&__ParamSpeed, "Freq.", "Frequency",
+  	  	  	  	  "Hz", "Hz");
+
+  RatioView.Init(&__ParamRatio, "Ratio", "Duty cycle ratio",
+	  	  	  	  "%", "%");
+
+  ShapeView.Init(&__ParamShape, "Shape", "Shape");
+  ShapeView.AddDiscreteValue("triang.", "Triangular"); //const std::string& ShortDiscretValue, const std::string& LongDiscretValue);
+  ShapeView.AddDiscreteValue("Square", "Square");      //const std::string& ShortDiscretValue, const std::string& LongDiscretValue);
+
+  DadUI::cUIParameters ItemMainMenu;
+  DadUI::cUIParameters ItemLFOMenu2;
+  DadUI::cUIMemory	   ItemMenuMemory;
+
+  ItemMainMenu.Init(&DeepView, nullptr, &SpeedView);
+  ItemLFOMenu2.Init(&SpeedView, &ShapeView, &RatioView);
+  ItemMenuMemory.Init();
+
+  DadUI::cUIMenu Menu1;
+  Menu1.Init();
+
+  Menu1.addMenuItem(&ItemMainMenu, "Main");
+  Menu1.addMenuItem(&ItemLFOMenu2, "LFO");
+  Menu1.addMenuItem(&ItemMenuMemory, "Memory");
 
 
-	DadGFX::cLayer* pRacquet = ADD_LAYER(RacquetLayer, 0, 0, 11);
-	pRacquet->drawFillRect(0,0,6,40, DadGFX::sColor(255, 255, 255, 255));
+  DadUI::cTapTempo TapTempo;
+  TapTempo.Init(&DadUI::cPendaUI::m_FootSwitch2, &SpeedView, DadUI::eTempoType::frequency);
 
-	DadGFX::cLayer* pBall = ADD_LAYER(BallLayer, 0, 0, 10);
-	pBall->drawFillCircle(7,7,7,DadGFX::sColor(255, 255, 255,255));
+  DadUI::cPendaUI::setActiveObject(&Menu1);
 
-	DadGFX::cImageLayer* pPenda = __Display.addLayer(Penda_map, 70, 20, 80, 80, 8);
-	// If you use flash memory storage
-	//DadGFX::cImageLayer* pPenda = __Display.addLayer(__FlashStorage.GetFilePtr("Penda.png"), 70, 20, 80, 80, 8);
+  //Audio Initializations
+  __LFO.Initialize(SAMPLING_RATE, 1.0f/__ParamSpeed, 1, 10, __ParamRatio.getNormalizedValue());
+  StartAudio();
 
-	DadGFX::cFont Vanilla(&__Vanilla_Extract_20p);
-	// If you use flash memory storage
-	//DadGFX::GFXBinFont * pBinFont = (DadGFX::GFXBinFont *)__FlashStorage.GetFilePtr("Vanilla_Extract_20p.bin");
-	//DadGFX::cFont Vanilla(pBinFont);
-	DadGFX::cLayer* pText = ADD_LAYER(TextLayer, 20, 160, 2);
-	pText->setFont(&Vanilla);
-	pText->setCursor(0,0);
-	pText->setTextFrontColor(DadGFX::sColor(255,255,255,100));
-	pText->drawText("Demo");
-	pText->setCursor(0,Vanilla.getHeight());
-	pText->drawText("PENDA Generic");
+  // Display refresh
+  __Display.flush();
 
-	__Display.flush();
+// ===** End DAD **=================================================================
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float AvanceX = 7;
-  float AvanceY = 5;
-  int16_t PosX = 0;
-  int16_t PosY = 100;
-  int16_t PosRacquetX = 320-30;
-  int16_t PosRacquetY = (240/2)-20;
 
-  int16_t XPenda = 20;
-  int16_t YPenda = 70;
-  uint8_t  Move = 0;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(__Encoder0Inc != 0){
-		  XPenda += __Encoder0Inc;
-		  __Encoder0Inc = 0;
-		  Move = 1;
-	  }
-	  if(__Encoder1Inc != 0){
-		  XPenda += __Encoder1Inc;
-		  YPenda += __Encoder1Inc;
-		  __Encoder1Inc = 0;
-		  Move = 1;
-	  }
-	  if(__Encoder2Inc != 0){
-		  YPenda += __Encoder2Inc;
-		  __Encoder2Inc = 0;
-		  Move = 1;
-	  }
-	  if(__Encoder3Inc != 0){
-		  XPenda += __Encoder3Inc;
-		  YPenda -= __Encoder3Inc;
-		  __Encoder3Inc = 0;
-		  Move = 1;
-	  }
-
-	  if( Move == 1 ){
-		  if(XPenda < 0) XPenda = 0;
-		  if(XPenda > __Display.getWith()) XPenda=__Display.getWith()-1;
-		  if(YPenda <0) YPenda = 0;
-		  if(YPenda > __Display.getHeight()) YPenda=__Display.getHeight()-1;
-
-		  Move = 0;
-		  pPenda->moveLayer(XPenda, YPenda);
-	  }
-
-      PosX += AvanceX;
-      if(PosX < 0){
-          PosX = 0;
-          AvanceX = - AvanceX;
-      }
-      if(PosX >= TFT_HEIGHT-30){
-          PosX = TFT_HEIGHT-30;
-          AvanceX = - AvanceX;
-      }
-
-      PosY += AvanceY;
-      if(PosY < 0){
-          PosY = 0;
-          AvanceY = - AvanceY;
-      }
-
-      if(PosY >= TFT_WIDTH-7){
-          PosY = TFT_WIDTH-7;
-          AvanceY = - AvanceY;
-      }
-
-      int16_t DelatY = (PosRacquetY + 20) - PosY;
-
-      PosRacquetY -= DelatY / (3+((TFT_HEIGHT-PosX)/25));
-
-      if(PosRacquetY < 0){
-          PosRacquetY = 0;
-      }
-
-      if((PosRacquetY+40) > TFT_WIDTH){
-          PosRacquetY = TFT_WIDTH-40;
-      }
-
-      pBall->moveLayer(PosX, PosY);
-      pRacquet->moveLayer(PosRacquetX, PosRacquetY);
+// =====** DAD **=================================================================
+	  DadUI::cPendaUI::Update();
       __Display.flush();
-      HAL_Delay(10);
+      if(__CT >= (uint32_t) (((float)SAMPLING_RATE / 4.0f)  * 0.5f)){
+    	  __CT =0;
+    	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+      }
+	  HAL_Delay(100);
+
+// ===** End DAD **=================================================================
+
   }
-  // ==End DAD=================================================================
   /* USER CODE END 3 */
 }
 
@@ -752,8 +802,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Encoder3_SW_Pin FootSwitch2_Pin */
-  GPIO_InitStruct.Pin = Encoder3_SW_Pin|FootSwitch2_Pin;
+  /*Configure GPIO pins : Encoder3_SW_Pin FootSwitch1_Pin */
+  GPIO_InitStruct.Pin = Encoder3_SW_Pin|FootSwitch1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
@@ -771,9 +821,9 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(Encoder2_SW_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Encoder0_SW_Pin Encoder0_A_Pin FootSwitch2A2_Pin Encoder1_B_Pin
+  /*Configure GPIO pins : Encoder0_SW_Pin Encoder0_A_Pin FootSwitch2_Pin Encoder1_B_Pin
                            Encoder2_A_Pin Encoder2_B_Pin Encoder1_A_Pin */
-  GPIO_InitStruct.Pin = Encoder0_SW_Pin|Encoder0_A_Pin|FootSwitch2A2_Pin|Encoder1_B_Pin
+  GPIO_InitStruct.Pin = Encoder0_SW_Pin|Encoder0_A_Pin|FootSwitch2_Pin|Encoder1_B_Pin
                           |Encoder2_A_Pin|Encoder2_B_Pin|Encoder1_A_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;

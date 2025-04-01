@@ -70,8 +70,8 @@ void MX_DMA2D_Init(void);
 #define Encoder3_B_GPIO_Port GPIOB
 #define Encoder3_SW_Pin GPIO_PIN_10
 #define Encoder3_SW_GPIO_Port GPIOG
-#define FootSwitch2_Pin GPIO_PIN_9
-#define FootSwitch2_GPIO_Port GPIOG
+#define FootSwitch1_Pin GPIO_PIN_9
+#define FootSwitch1_GPIO_Port GPIOG
 #define LED_Pin GPIO_PIN_7
 #define LED_GPIO_Port GPIOC
 #define Encoder2_SW_Pin GPIO_PIN_0
@@ -86,8 +86,8 @@ void MX_DMA2D_Init(void);
 #define TFT_DC_GPIO_Port GPIOC
 #define Encoder0_B_Pin GPIO_PIN_11
 #define Encoder0_B_GPIO_Port GPIOD
-#define FootSwitch2A2_Pin GPIO_PIN_2
-#define FootSwitch2A2_GPIO_Port GPIOA
+#define FootSwitch2_Pin GPIO_PIN_2
+#define FootSwitch2_GPIO_Port GPIOA
 #define Encoder1_B_Pin GPIO_PIN_6
 #define Encoder1_B_GPIO_Port GPIOA
 #define Encoder2_A_Pin GPIO_PIN_5
@@ -102,7 +102,14 @@ void MX_DMA2D_Init(void);
 #define RESET_CODEC_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+// use to determine if need erase persistent storage (Increment if change storage structure)
+#define kNumBuild 2
 
+
+
+// Define FONTH to load resources in code (.h file).
+// Comment out #define FONTH to use resources loaded in QSPI flash. See https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher  for more information.
+#define FONTH
 
 /* Sections ---------------------------------------------------------*/
 #define SDRAM_SECTION __attribute__((section(".SDRAM_Section")))
@@ -113,6 +120,9 @@ void MX_DMA2D_Init(void);
 
 /* Audio ---------------------------------------------------------*/
 #define AUDIO_BUFFER_SIZE 4
+#define SAMPLING_RATE 48000.0f
+#define UI_RT_SAMPLING_RATE (SAMPLING_RATE / (float) AUDIO_BUFFER_SIZE)
+
 struct AudioBuffer{
 	float Right;
 	float Left;
