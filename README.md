@@ -27,7 +27,7 @@ I would be very happy to receive your feedback on the use of this project. If yo
 ## Resources
 - **PENDA-Hardware Repository**: [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)
 - **DaisySeedGFX2 Repository**: [GitHub Link](https://github.com/DADDesign-Projects/DaisySeedGFX2)
-- **Daisy_QSPI_Flasher Repository**: [GitHub Link] (https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher)
+- **Daisy_QSPI_Flasher Repository**: [GitHub Link](https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher)
 
 ## License
 PENDA Software is released under the **MIT License**.
