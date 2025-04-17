@@ -65,16 +65,16 @@ PENDA Software is released under the **MIT License**.
 - **Tap tempo:** Controls tremolo rate
 
 ### MIDI Controls
-CC#20 Depth
-CC#21 Shape
-CC#22 Freq.
-CC#23 Ratio
-CC#48 Preset Down
-CC#49 Preset Up
-CC#50 ON/OFF
-CC#51 ON
-CC#52 OFF
-PC#x  Preset x
+- CC#20 Depth
+- CC#21 Shape
+- CC#22 Freq.
+- CC#23 Ratio
+- CC#48 Preset Down
+- CC#49 Preset Up
+- CC#50 ON/OFF
+- CC#51 ON
+- CC#52 OFF
+- PC#x  Preset x
 
 ### GUI Screenshot
 ![Image1](Media/PENDA_UI_1.jpg)
