@@ -5,7 +5,6 @@
 //====================================================================================
 #include "UIComponent.h"
 
-
 namespace DadUI {
 
 //***********************************************************************************
@@ -27,6 +26,7 @@ void cUIParameters::Init(cParameterView* paramView1, cParameterView* paramView2,
 	m_parameterViews[1] = paramView2; 	// Assign the second parameter view
 	m_parameterViews[2] = paramView3; 	// Assign the third parameter view
 	DeActivate(); 						// Deactivate the component initially
+
 }
 
 // --------------------------------------------------------------------------
@@ -202,6 +202,13 @@ void cUIMemory::Init() {
 	RestoreSlot();                    					// Restore data from the active slot
 	cPendaUI::RequestFocus(this);     					// Request UI focus
 	m_PressCount = 0;
+	cPendaUI::m_Midi.addControlChangeCallback(MIDI_PRESET_UP, (uint32_t) this, MIDI_PresetUp_CallBack );
+	cPendaUI::m_Midi.addControlChangeCallback(MIDI_PRESET_DOWN, (uint32_t) this, MIDI_PresetDown_CallBack );
+	cPendaUI::m_Midi.addControlChangeCallback(MIDI_ON_OFF, (uint32_t) this, MIDI_OnOff_CallBack );
+	cPendaUI::m_Midi.addControlChangeCallback(MIDI_ON, (uint32_t) this, MIDI_OnOff_CallBack );
+	cPendaUI::m_Midi.addControlChangeCallback(MIDI_OFF, (uint32_t) this, MIDI_OnOff_CallBack );
+	cPendaUI::m_Midi.addProgramChangeCallback((uint32_t) this, MIDI_ProgramChange_CallBack);
+
 }
 
 // --------------------------------------------------------------------------
@@ -239,34 +246,11 @@ void cUIMemory::Update(){
 
 	if((PressDuration > 1.0f) && (m_PressCount != PressCount)){
 		m_PressCount = PressCount;
-		if(cPendaUI::m_AudioState){
-			cPendaUI::m_AudioState = false;
-		}else{
-			cPendaUI::m_AudioState = true;
-		}
-		drawMainDownDyn(); 	// Redraw dynamic UI elements
+		OnOff();
 
 	}else if((SwitchSate == 0) && (PressDuration < 0.5f) && (m_PressCount != PressCount)){
 		m_PressCount = PressCount;
-		uint8_t activeSlot = cPendaUI::m_Memory.getActiveSlot();
-		uint8_t targetSlot = activeSlot;
-
-		do {
-		    targetSlot = (targetSlot + 1) % NB_MEM_SLOT;
-
-		    if (targetSlot == activeSlot) {
-		        // No loadable slot found
-		        break;
-		    }
-
-		    if (isLoadable(targetSlot)) {
-		        m_MemorySlot = targetSlot;
-		        RestoreSlot();
-		        drawMainDownDyn();  // Redraw dynamic UI elements
-		        cPendaUI::ReDraw();
-		        break;
-		    }
-		} while (true);
+		IncrementSlot(+1);
 	}
 
 	if (!m_isActive) return; // Skip update if UI is inactive
@@ -335,6 +319,41 @@ void cUIMemory::Update(){
 	} else {
 		m_ActionExec = 0; 								// Reset action execution flag
 	}
+}
+
+// --------------------------------------------------------------------------
+// Function: IncrementSlot
+void cUIMemory::IncrementSlot(int8_t Increment){
+	uint8_t activeSlot = cPendaUI::m_Memory.getActiveSlot();
+	uint8_t targetSlot = activeSlot;
+
+	do {
+	    targetSlot = (targetSlot + Increment) % NB_MEM_SLOT;
+
+	    if (targetSlot == activeSlot) {
+	        // No loadable slot found
+	        break;
+	    }
+
+	    if (isLoadable(targetSlot)) {
+	        m_MemorySlot = targetSlot;
+	        RestoreSlot();
+	        drawMainDownDyn();  // Redraw dynamic UI elements
+	        cPendaUI::ReDraw();
+	        break;
+	    }
+	} while (true);
+}
+
+// --------------------------------------------------------------------------
+// Function: OnOff
+void cUIMemory::OnOff(){
+	if(cPendaUI::m_AudioState){
+		cPendaUI::m_AudioState = false;
+	}else{
+		cPendaUI::m_AudioState = true;
+	}
+	drawMainDownDyn(); 	// Redraw dynamic UI elements
 }
 
 // --------------------------------------------------------------------------
@@ -495,6 +514,52 @@ void cUIMemory::RestoreSlot() {
 	}
 }
 
+// --------------------------------------------------------------------------
+// Function call when this CC MIDI_PRESET_UP is received
+void cUIMemory::MIDI_PresetUp_CallBack(uint8_t control, uint8_t value, uint32_t userData){
+	cUIMemory *pThis = (cUIMemory *)userData;
+	pThis->IncrementSlot(+1);
+}
+
+// --------------------------------------------------------------------------
+// Function call when this CC MIDI_PRESET_DOWN is received
+void cUIMemory::MIDI_PresetDown_CallBack(uint8_t control, uint8_t value, uint32_t userData){
+	cUIMemory *pThis = (cUIMemory *)userData;
+	pThis->IncrementSlot(-1);
+}
+
+// --------------------------------------------------------------------------
+// Function call when this CC MIDI_ON_OFF is received
+void cUIMemory::MIDI_OnOff_CallBack(uint8_t control, uint8_t value, uint32_t userData){
+	cUIMemory *pThis = (cUIMemory *)userData;
+	switch(control){
+	case MIDI_ON_OFF :
+		pThis->OnOff();
+		return;
+		break;
+	case MIDI_ON:
+		cPendaUI::m_AudioState = true;
+		break;
+	case MIDI_OFF :
+		cPendaUI::m_AudioState = false;
+		break;
+	}
+	pThis->drawMainDownDyn();
+}
+
+// --------------------------------------------------------------------------
+// Function call when this PC MIDI is received
+void cUIMemory::MIDI_ProgramChange_CallBack(uint8_t program, uint32_t userData){
+	cUIMemory *pThis = (cUIMemory *)userData;
+
+	program = program;
+    if (pThis->isLoadable(program)) {
+    	pThis->m_MemorySlot = program;
+    	pThis->RestoreSlot();
+    	pThis->drawMainDownDyn();  // Redraw dynamic UI elements
+        cPendaUI::ReDraw();
+    }
+}
 //***********************************************************************************
 // Class: cTapTempo
 // Description: This class handles the Tap Tempo functionality, updating a parameter

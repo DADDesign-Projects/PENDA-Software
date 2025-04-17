@@ -58,6 +58,7 @@ void MX_FMC_Init(void);
 void MX_SAI1_Init(void);
 void MX_SPI1_Init(void);
 void MX_DMA2D_Init(void);
+void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN EFP */
 

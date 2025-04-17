@@ -16,7 +16,8 @@ namespace DadUI {
 void cParameter::Init(float InitValue, float Min, float Max,
 					  float RapidIncrement, float SlowIncrement,
 					  CallbackType Callback,
-					  float Slope){
+					  float Slope,
+					  uint8_t Control){
     m_Min = Min;
     m_Max = Max;
     m_RapidIncrement = RapidIncrement;
@@ -29,9 +30,12 @@ void cParameter::Init(float InitValue, float Min, float Max,
     }
     m_TargetValue = InitValue;
     m_Slope = Slope;
+    if(Control != 0xFF){
+    	cPendaUI::m_Midi.addControlChangeCallback(Control, (uint32_t) this, MIDIControlChangeCallBack );
+    }
 
     // Ensure the initial value is within bounds
-    setValue(InitValue);
+	setValue(InitValue);
 }
 
 // --------------------------------------------------------------------------
@@ -82,6 +86,18 @@ void cParameter::Increment(int32_t nbStep, bool Switch) {
 	cPendaUI::m_Memory.setDirty();
     setValue(Value);
 }
+
+// --------------------------------------------------------------------------
+// Function call when this CC is received
+void cParameter::MIDIControlChangeCallBack(uint8_t control, uint8_t value, uint32_t userData){
+	cParameter *pThis = (cParameter *)userData;
+	value = value > 127 ? 127 : value;
+	float NewVal = pThis->m_Min + (value * (pThis->m_Max - pThis->m_Min)) / 127.0;
+	pThis->setValue(NewVal);
+	cPendaUI::m_Memory.setDirty();
+	cPendaUI::ReDraw();
+}
+
 
 //***********************************************************************************
 // class cParameterView

@@ -12,6 +12,7 @@
 #include "cEncoder.h"
 #include "cSwitch.h"
 #include "UIDefines.h"
+#include "Midi.h"
 #include <vector>
 #include <stack>
 
@@ -43,7 +44,7 @@ public:
 
     // --------------------------------------------------------------------------
     // Initialize the user interface
-	static void Init(const char* pSplashTxt1, const char* pSplashTxt2, const char* pSplashTxt3);
+	static void Init(const char* pSplashTxt1, const char* pSplashTxt2, const char* pSplashTxt3, UART_HandleTypeDef *phuart);
 
 	// --------------------------------------------------------------------------
 	// Set the active GUI object
@@ -128,6 +129,9 @@ public:
 
     static cSwitch			m_FootSwitch1;  		// Foot switch 1
     static cSwitch			m_FootSwitch2;  		// Foot switch 2
+
+
+    static cMidi			m_Midi;					// MIDI manager
 
     static DadQSPI::cMemory	m_Memory;    			// Slot memory manager
 

@@ -84,6 +84,12 @@ protected:
 //              user interactions via encoders and buttons.
 //***********************************************************************************
 
+#define MIDI_OFF		 52		// CC#52 Off
+#define MIDI_ON		 	 51		// CC#51 On
+#define MIDI_ON_OFF		 50		// CC#50 On/Off
+#define MIDI_PRESET_UP 	 49		// CC#49 Preset Up
+#define MIDI_PRESET_DOWN 48		// CC#48 Preset Down
+
 // Enumeration for memory operation states
 enum class eMemState {
     Save,   // State for saving data to a memory slot
@@ -137,6 +143,22 @@ public:
     //              and redraws the UI.
     void OnMainFocusGained() override;
 
+    // --------------------------------------------------------------------------
+    // Function call when this CC MIDI_PRESET_UP is received
+    static void MIDI_PresetUp_CallBack(uint8_t control, uint8_t value, uint32_t userData);
+
+    // --------------------------------------------------------------------------
+    // Function call when this CC MIDI_PRESET_DOWN is received
+    static void MIDI_PresetDown_CallBack(uint8_t control, uint8_t value, uint32_t userData);
+
+    // --------------------------------------------------------------------------
+    // Function call when this CC MIDI_ON_OFF is received
+    static void MIDI_OnOff_CallBack(uint8_t control, uint8_t value, uint32_t userData);
+
+    // --------------------------------------------------------------------------
+    // Function call when this PC MIDI is received
+    static void MIDI_ProgramChange_CallBack(uint8_t program, uint32_t userData);
+
 protected:
     // --------------------------------------------------------------------------
     // Function: isLoadable
@@ -159,6 +181,14 @@ protected:
             return 0;
         }
     }
+
+    // --------------------------------------------------------------------------
+    // Function: IncrementSlot
+    void IncrementSlot(int8_t Increment);
+
+    // --------------------------------------------------------------------------
+    // Function: OnOff
+    void OnOff();
 
     // --------------------------------------------------------------------------
     // Function: drawMainUpStat

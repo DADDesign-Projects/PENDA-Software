@@ -1,0 +1,14 @@
+There are two ways to use resources (fonts, images, etc.) in the project:
+
+1. Embedded resources (recommended for development)
+	To embed the resources directly into the code, uncomment line 113 in the main.h file: #define FONTH
+	This method is convenient during development, especially when using the Debug build, 
+	since both code and data are loaded into RAM.
+	⚠️ Warning: This option consumes a lot of RAM and is not compatible with 
+	the Release build, as the STM32H750 only has 128 KB of internal flash.
+
+2. Resources stored in QSPI flash (recommended for Release)
+	To generate a Release build, you must:
+		Comment out line 113 in the main.h file: //#define FONTH
+		Flash the resources to QSPI memory using the following utility:
+		https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher 

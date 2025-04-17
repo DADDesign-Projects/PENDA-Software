@@ -10,6 +10,7 @@
 #include "cDisplay.h"
 #include "PendaUI.h"
 #include "Serialize.h"
+
 // PI
 #define __PI 3.14159265358979f
 #define Deg2Rad(A) (A) * __PI / 180.0f
@@ -35,7 +36,8 @@ public:
     void Init(float InitValue, float Min, float Max,
 			  float RapidIncrement, float SlowIncrement,
 			  CallbackType Callback = nullptr,
-			  float Slope = 0);
+			  float Slope = 0,
+			  uint8_t Control = 0xFF);
 
     // --------------------------------------------------------------------------
     // Increment the parameter value by a number of steps
@@ -147,6 +149,9 @@ public:
     	setValue(Value);
     }
 
+    // --------------------------------------------------------------------------
+    // Function call when this CC is received
+    static void MIDIControlChangeCallBack(uint8_t control, uint8_t value, uint32_t userData);
 
 protected:
     // --------------------------------------------------------------------------

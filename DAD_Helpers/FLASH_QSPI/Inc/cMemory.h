@@ -65,7 +65,11 @@ public:
     // ------------------------------------------------------------------------
     // Checks if a slot has a saved state
     inline uint8_t isSave(uint8_t saveNumber) const{
-        return m_MemoryPersistent.m_Save[saveNumber];
+    	if(saveNumber < NB_MEM_SLOT){
+    		return m_MemoryPersistent.m_Save[saveNumber];
+    	}else{
+    		return 0;
+    	}
     }
 
     // ------------------------------------------------------------------------
@@ -81,7 +85,11 @@ public:
     // ------------------------------------------------------------------------
     // Get size of the slot
     inline uint32_t getSize(uint8_t saveNumber) const{
-    	return __PersistentStorage.getSize(IDMemSlot + saveNumber);
+    	if(saveNumber < NB_MEM_SLOT){
+    		return __PersistentStorage.getSize(IDMemSlot + saveNumber);
+    	}else{
+    		return 0;
+    	}
     }
 
 protected:

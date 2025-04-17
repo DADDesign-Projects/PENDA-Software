@@ -63,6 +63,9 @@ DMA_HandleTypeDef hdma_sai1_b;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 
+UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_rx;
+
 SDRAM_HandleTypeDef hsdram1;
 
 /* USER CODE BEGIN PV */
@@ -107,7 +110,6 @@ DadUI::cParameter __ParamDepth;
 DadUI::cParameter __ParamShape;
 DadUI::cParameter __ParamSpeed;
 DadUI::cParameter __ParamRatio;
-
 
 // ------------------------------------------------------------------------
 // Parameter callback
@@ -226,6 +228,7 @@ int main(void)
   MX_SAI1_Init();
   MX_SPI1_Init();
   MX_DMA2D_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
 // =====** DAD **=================================================================
@@ -235,7 +238,7 @@ int main(void)
   __Flash.Init(&hqspi); 		// Initialize Flash memory
 
   SCB_EnableICache(); 			// Enable I-Cache
-  SCB_EnableICache(); 			// Enable D-Cache
+  SCB_EnableDCache(); 			// Enable D-Cache
 
   // Display Initializations
   INIT_DISPLAY(__Display, &hspi1);
@@ -276,29 +279,35 @@ int main(void)
   }
   pBack->eraseLayer(DadGFX::sColor(0,0,0,255));
 
-  // GUI Initializations
-  DadUI::cPendaUI::Init("Demo", "Tremolo", "Version 1.0");
+  // GUI Initializations --------------------------------------------------------------------
+  DadUI::cPendaUI::Init("Demo", "Tremolo", "Version 1.0", &huart1);
 
+  // Parameter
   __ParamDepth.Init(50.0f, 0.0f, 100.0f,    // float InitValue, float Min, float Max,
 			  5.0f, 1.0f,     		 	 	// float RapidIncrement, float SlowIncrement,
 			  nullptr,       				// CallbackType Callback = nullptr,
-			  0.2f * UI_RT_SAMPLING_RATE);	// float Slope = 0.1s);
+			  0.2f * UI_RT_SAMPLING_RATE, 	// float Slope = 0.1s);
+			  20);
 
   __ParamShape.Init(0.0f, 0.0f, 1.0f,   	// float InitValue, float Min, float Max,
 			  1.0f, 1.0f, 	 				// float RapidIncrement, float SlowIncrement,
 			  nullptr,   	 				// CallbackType Callback = nullptr,
-			  0);		 	 				// float Slope = 0);
+			  0,		 	 				// float Slope = 0
+  	  	  	  21);
 
   __ParamSpeed.Init(5.0f, 1.0, 10.0f,  		// float InitValue, float Min, float Max,
 			  0.5f, 0.05f, 	 			    // float RapidIncrement, float SlowIncrement,
 			  SpeedChange,	 			    // CallbackType Callback = nullptr,
-			  0);		 	 			    // float Slope = 0, float SamplingRate=SAMPLING_RATE);
+			  0,		 	 			    // float Slope = 0
+  	  	  	  22);
 
   __ParamRatio.Init(0, -100, +100,			// float InitValue, float Min, float Max,
 			  5.0f, 1.0f, 			        // float RapidIncrement, float SlowIncrement,
 			  RatioChange,     				// CallbackType Callback = nullptr,
-			  0);		     				// float Slope = 0, float SamplingRate=SAMPLING_RATE);
+			  0,		     				// float Slope = 0
+  	  	  	  23);
 
+  // Parameter View
   DadUI::cParameterNumNormalView 		DeepView;
   DadUI::cParameterDiscretView	 		ShapeView;
   DadUI::cParameterNumNormalView		SpeedView;
@@ -317,6 +326,7 @@ int main(void)
   ShapeView.AddDiscreteValue("triang.", "Triangular"); //const std::string& ShortDiscretValue, const std::string& LongDiscretValue);
   ShapeView.AddDiscreteValue("Square", "Square");      //const std::string& ShortDiscretValue, const std::string& LongDiscretValue);
 
+  // Menus
   DadUI::cUIParameters ItemMainMenu;
   DadUI::cUIParameters ItemLFOMenu2;
   DadUI::cUIMemory	   ItemMenuMemory;
@@ -332,14 +342,17 @@ int main(void)
   Menu1.addMenuItem(&ItemLFOMenu2, "LFO");
   Menu1.addMenuItem(&ItemMenuMemory, "Memory");
 
-
+  // Tap Tempo
   DadUI::cTapTempo TapTempo;
   TapTempo.Init(&DadUI::cPendaUI::m_FootSwitch2, &SpeedView, DadUI::eTempoType::frequency);
 
+  // Start UI
   DadUI::cPendaUI::setActiveObject(&Menu1);
 
-  //Audio Initializations
+  // DSP Initializations
   __LFO.Initialize(SAMPLING_RATE, 1.0f/__ParamSpeed, 1, 10, __ParamRatio.getNormalizedValue());
+
+  // Audio
   StartAudio();
 
   // Display refresh
@@ -358,12 +371,16 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 // =====** DAD **=================================================================
-	  DadUI::cPendaUI::Update();
-      __Display.flush();
+	  DadUI::cPendaUI::Update(); 				// Update UI
+	  DadUI::cPendaUI::m_Midi.ProcessBuffer();  // Update Midi
+      __Display.flush();		 				// Update display
+
+      // LED blinking: indicates that the audio loop is operating correctly.
       if(__CT >= (uint32_t) (((float)SAMPLING_RATE / 4.0f)  * 0.5f)){
     	  __CT =0;
     	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
       }
+
 	  HAL_Delay(100);
 
 // ===** End DAD **=================================================================
@@ -605,7 +622,7 @@ void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -631,6 +648,54 @@ void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 31250;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 void MX_DMA_Init(void)
@@ -649,6 +714,9 @@ void MX_DMA_Init(void)
   /* DMA1_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
+  /* DMA1_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
 
 }
 

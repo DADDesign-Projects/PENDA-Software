@@ -92,9 +92,12 @@ int32_t			cPendaUI::m_Encoder3Increment;  // Increment value for encoder 3
 cSwitch			cPendaUI::m_FootSwitch1;  		// Foot switch 1
 cSwitch			cPendaUI::m_FootSwitch2;  		// Foot switch 2
 
+cMidi			cPendaUI::m_Midi;   			// MIDI manager
+
 iGUIObject*	 	cPendaUI::m_pActiveObject;  	// Currently active GUI object
 
 std::stack<iGUIObject*> cPendaUI::m_MainFocusStack;// Stack of Main focus
+
 
 // Slot memory manager
 DadQSPI::cMemory cPendaUI::m_Memory;
@@ -104,7 +107,7 @@ bool 			cPendaUI::m_AudioState;
 
 // --------------------------------------------------------------------------
 // Initialize the user interface
-void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, const char* pSplashTxt3){
+void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, const char* pSplashTxt3, UART_HandleTypeDef *phuart){
 
 	m_Memory.Init();
 
@@ -236,7 +239,8 @@ void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, const char
 
 	m_pActiveObject= nullptr;
 
-	cPendaUI::m_AudioState = false;
+	m_Midi.Initialize(phuart);
+	m_AudioState = false;
 }
 
 // --------------------------------------------------------------------------

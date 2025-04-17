@@ -1,6 +1,6 @@
 # PENDA Software
 ![Image1](Media/Penda_1.jpg)
-
+## 🚀 New Release: MIDI Protocol Support!
 ## Introduction
 PENDA Software is an advanced framework tailored for the **PENDA Hardware** platform [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware), enabling effortless development of high-quality audio effect pedals. Designed to streamline development, it allows creators to focus entirely on signal processing while the framework manages hardware complexities.
 
@@ -16,7 +16,7 @@ This project is developed by DAD Design.
 - **Graphical User Interface (GUI)**:
   - **TFT Display** with **ST7789** driver support.
   - **DaisySeedGFX2** for advanced UI visualization and customization.
-  - Interactive controls via **footswitches** (tap tempo) and **encoders**.
+  - Interactive controls via **footswitches** (tap tempo), **encoders** and **MIDI protocol**.
 - **Development Environment**: Built with **STM32Cube**, offering modular and extensible architecture for easy customization.
 
 With **PENDA Hardware**, this framework provides an all-in-one solution for pedal effect development, eliminating the need for low-level hardware management.
@@ -27,6 +27,7 @@ I would be very happy to receive your feedback on the use of this project. If yo
 ## Resources
 - **PENDA-Hardware Repository**: [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)
 - **DaisySeedGFX2 Repository**: [GitHub Link](https://github.com/DADDesign-Projects/DaisySeedGFX2)
+- **Daisy_QSPI_Flasher Repository**: [GitHub Link] (https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher)
 
 ## License
 PENDA Software is released under the **MIT License**.
@@ -62,6 +63,18 @@ PENDA Software is released under the **MIT License**.
 
 #### Footswitch 2
 - **Tap tempo:** Controls tremolo rate
+
+### MIDI Controls
+CC#20 Depth
+CC#21 Shape
+CC#22 Freq.
+CC#23 Ratio
+CC#48 Preset Down
+CC#49 Preset Up
+CC#50 ON/OFF
+CC#51 ON
+CC#52 OFF
+PC#x  Preset x
 
 ### GUI Screenshot
 ![Image1](Media/PENDA_UI_1.jpg)
