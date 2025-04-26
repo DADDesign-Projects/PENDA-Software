@@ -1,6 +1,6 @@
 # PENDA Software
 ![Image1](Media/Penda_1.jpg)
-## 🚀 New Release — Tremolo/Vibrato and Delay Effects Added!.
+## 🚀 New Release — Tremolo/Vibrato and Delay Effects Added!
 ## Introduction
 PENDA Software is a collection of audio effects built on an advanced framework, specifically designed for the PENDA Hardware platform ([GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)). You can use this framework to easily develop your own high-quality audio effect pedals, focusing entirely on signal processing while the framework handles all hardware complexities. 
 
