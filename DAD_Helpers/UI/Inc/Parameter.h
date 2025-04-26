@@ -21,10 +21,10 @@ namespace DadUI {
 //***********************************************************************************
 // class cParameter
 //***********************************************************************************
-
+class cParameter;
 // Define the callback function type:
 // This callback is called whenever the parameter value is modified.
-using CallbackType = std::function<void(float)>;
+using CallbackType = std::function<void(cParameter*, uint32_t UserData)>;
 
 class cParameter : public iGUIObject{
 
@@ -33,11 +33,12 @@ public:
 
     // --------------------------------------------------------------------------
     // Initialize the parameter with given attributes
-    void Init(float InitValue, float Min, float Max,
-			  float RapidIncrement, float SlowIncrement,
-			  CallbackType Callback = nullptr,
-			  float Slope = 0,
-			  uint8_t Control = 0xFF);
+    void Init(float 		InitValue, 		float Min, 			float Max,
+			  float 		RapidIncrement, float SlowIncrement,
+			  CallbackType 	Callback = nullptr,
+			  uint32_t		CallbackUserData = 0,
+			  float 		Slope = 0,
+			  uint8_t 		Control = 0xFF);
 
     // --------------------------------------------------------------------------
     // Increment the parameter value by a number of steps
@@ -167,6 +168,7 @@ protected:
     float m_Slope;
 
     CallbackType m_Callback;        // Callback function
+    uint32_t	 m_CallbackUserData;// Callback user data
 };
 
 //***********************************************************************************

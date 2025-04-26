@@ -15,7 +15,7 @@ namespace DadUI {
 // Initialize the parameter with given attributes
 void cParameter::Init(float InitValue, float Min, float Max,
 					  float RapidIncrement, float SlowIncrement,
-					  CallbackType Callback,
+					  CallbackType Callback, uint32_t CallbackUserData,
 					  float Slope,
 					  uint8_t Control){
     m_Min = Min;
@@ -23,6 +23,7 @@ void cParameter::Init(float InitValue, float Min, float Max,
     m_RapidIncrement = RapidIncrement;
     m_SlowIncrement = SlowIncrement;
     m_Callback = Callback;
+    m_CallbackUserData = CallbackUserData;
     if(Slope == 0){
     	m_Step = (Max-Min);
     }else{
@@ -69,7 +70,7 @@ void cParameter::RTProcess() {
 
 	    // Call the callback if it is defined
 		if (m_Callback) {
-			m_Callback(m_Value);
+			m_Callback(this, m_CallbackUserData);
 		}
     }
 }
