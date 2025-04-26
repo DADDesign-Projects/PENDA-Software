@@ -96,5 +96,3 @@ With PENDA Hardware, this framework provides an all-in-one solution for pedal ef
 ![Image3](Media/PENDA_UI_3.jpg)
 
 
-
-
