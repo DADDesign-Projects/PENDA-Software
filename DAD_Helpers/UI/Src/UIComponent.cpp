@@ -593,9 +593,9 @@ void cTapTempo::Update(){
 	if ((0 != PeriodUpdateCount) && (m_PeriodUpdateCount != PeriodUpdateCount)) {
 		// Update the parameter value with the latest press period
 		if(m_TempoType == eTempoType::frequency){
-			m_pParameterView->getParameter()->setValue(m_pFootSwitch->getPressPeriod());
+			m_pParameterView->getParameter()->setValue(1/m_pFootSwitch->getPressPeriod());
 		}else{
-			m_pParameterView->getParameter()->setValue(1.0f/m_pFootSwitch->getPressPeriod());
+			m_pParameterView->getParameter()->setValue(m_pFootSwitch->getPressPeriod());
 		}
 
 		m_PeriodUpdateCount = PeriodUpdateCount;
