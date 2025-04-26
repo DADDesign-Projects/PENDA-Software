@@ -104,13 +104,14 @@ void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN Private defines */
 // use to determine if need erase persistent storage (Increment if change storage structure)
-#define kNumBuild 2
-
-
+#define kNumBuild 0
 
 // Define FONTH to load resources in code (.h file).
 // Comment out #define FONTH to use resources loaded in QSPI flash. See https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher  for more information.
+// USE RAM allows you to automatically change the resource loading mode depending on the Debug or Release build mode
+#ifdef USE_RAM
 #define FONTH
+#endif
 
 /* Sections ---------------------------------------------------------*/
 #define SDRAM_SECTION __attribute__((section(".SDRAM_Section")))

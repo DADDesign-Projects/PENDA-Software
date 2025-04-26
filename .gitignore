@@ -1,3 +1,6 @@
 /Debug
 /Release
 PENDA-Software.launch
+/.settings
+PENDA-Software Debug.launch
+.mxproject

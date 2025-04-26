@@ -107,7 +107,7 @@ bool 			cPendaUI::m_AudioState;
 
 // --------------------------------------------------------------------------
 // Initialize the user interface
-void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, const char* pSplashTxt3, UART_HandleTypeDef *phuart){
+void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, UART_HandleTypeDef *phuart){
 
 	m_Memory.Init();
 
@@ -162,20 +162,19 @@ void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, const char
     m_pBackLayer->setCursor(101, 65);
     m_pBackLayer->drawText("By DAD Design");
 
-    m_pBackLayer->setFont(m_pFont_XL);
+    m_pBackLayer->setFont(m_pFont_XXL);
     uint32_t TextWidth = m_pBackLayer->getTextWidth(pSplashTxt1);
+    if(TextWidth >= m_pBackLayer->getWith()){
+        m_pBackLayer->setFont(m_pFont_XL);
+        TextWidth = m_pBackLayer->getTextWidth(pSplashTxt1);
+    }
     m_pBackLayer->setCursor(TextCentre - (TextWidth/2), 100);
     m_pBackLayer->drawText(pSplashTxt1);
 
     m_pBackLayer->setFont(m_pFont_L);
     TextWidth = m_pBackLayer->getTextWidth(pSplashTxt2);
-    m_pBackLayer->setCursor(TextCentre - (TextWidth/2), 150);
+    m_pBackLayer->setCursor(TextCentre - (TextWidth/2), 185);
     m_pBackLayer->drawText(pSplashTxt2);
-
-    m_pBackLayer->setFont(m_pFont_L);
-    TextWidth = m_pBackLayer->getTextWidth(pSplashTxt3);
-    m_pBackLayer->setCursor(TextCentre - (TextWidth/2), 180);
-    m_pBackLayer->drawText(pSplashTxt3);
 
 
     __Display.flush();
@@ -262,6 +261,7 @@ void cPendaUI::Update(){
 	for(iGUIObject *pObject : __UIObjManager.m_TabGUIObject){
 		pObject->Update();  // Call the real-time process method for each object
 	}
+	m_Midi.ProcessBuffer();  // Update Midi
 }
 
 // --------------------------------------------------------------------------

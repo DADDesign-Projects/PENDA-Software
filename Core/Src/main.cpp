@@ -22,15 +22,13 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "cDisplay.h"
-
 #include "cEncoder.h"
 #include "cIS25LPxxx.h"
 #include "cMemory.h"
 #include "QSPI.h"
 #include "PendaUI.h"
-#include "UIComponent.h"
-#include "Parameter.h"
-#include "cDCO.h"
+#include "Effect.h"
+
 
 /* USER CODE END Includes */
 
@@ -97,35 +95,10 @@ DECLARE_LAYER(Back, TFT_HEIGHT , TFT_WIDTH);
 QFLASH_SECTION DadQSPI::cQSPI_FlasherStorage  __FlashStorage;
 DadQSPI::cQSPI_PersistentStorage 			  __PersistentStorage;
 
-// LFO
-DadDSP::cDCO __LFO;
-
 // UI Object Manager
 DadUI::cUIObjectManager __UIObjManager;
 
-// Main params
-DadUI::cParameter __ParamDepth;
-
-// LFO params
-DadUI::cParameter __ParamShape;
-DadUI::cParameter __ParamSpeed;
-DadUI::cParameter __ParamRatio;
-
-// ------------------------------------------------------------------------
-// Parameter callback
-// ------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------
-// SpeedChange
-void SpeedChange(float Value){
-	__LFO.setFreq(Value);
-}
-
-// ------------------------------------------------------------------------
-// Ratio change
-void RatioChange(float Value){
-	__LFO.setNormalizedDutyCycle(__ParamRatio.getNormalizedValue());
-}
+EFFECT		__Effect;
 
 // ------------------------------------------------------------------------
 // AudioCallback - Processes audio in real-time (called by the audio engine)
@@ -149,31 +122,17 @@ ITCM void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut) {
 
         // Apply processing if active
         if (__MemOnOff) {
-            __LFO.Step(); // Advance LFO to next step
-
-            float LFOVal = 0;
-            // Select LFO waveform based on parameter
-            switch ((uint16_t)__ParamShape) {
-                case 0: // Sine wave
-                    LFOVal = __LFO.getTriangleModValue();
-                    break;
-                case 1: // Square wave
-                    LFOVal = __LFO.getSquareModValue();
-                    break;
-            }
-
-            // Apply modulated gain to audio (LFO * depth control)
-            pOut->Right = pIn->Right * LFOVal * std::pow(10.0f,(1 - __ParamDepth.getNormalizedValue()) * -12 / 20.0f);
-            pOut->Left = pIn->Left * LFOVal * std::pow(10.0f, (1-__ParamDepth.getNormalizedValue()) *  -12/ 20.0f);
-        } else {
-            // Bypass processing (pass-through)
-            pOut->Right = pIn->Right;
-            pOut->Left = pIn->Left;
+        	__Effect.Process(pIn, pOut);
+        }else{
+        	AudioBuffer ZeroIn;
+        	ZeroIn.Right = 0;
+        	ZeroIn.Left = 0;
+        	__Effect.Process(&ZeroIn, pOut);
         }
+    	// Advance buffer pointers (post-increment)
+    	pOut++;
+    	pIn++;
 
-        // Advance buffer pointers (post-increment)
-        pOut++;
-        pIn++;
     }
 
     // Increment cycle counter for visual feedback:
@@ -280,77 +239,10 @@ int main(void)
   pBack->eraseLayer(DadGFX::sColor(0,0,0,255));
 
   // GUI Initializations --------------------------------------------------------------------
-  DadUI::cPendaUI::Init("Demo", "Tremolo", "Version 1.0", &huart1);
+  DadUI::cPendaUI::Init(EFFECT_NAME, EFFECT_VERSION, &huart1);
 
-  // Parameter
-  __ParamDepth.Init(50.0f, 0.0f, 100.0f,    // float InitValue, float Min, float Max,
-			  5.0f, 1.0f,     		 	 	// float RapidIncrement, float SlowIncrement,
-			  nullptr,       				// CallbackType Callback = nullptr,
-			  0.2f * UI_RT_SAMPLING_RATE, 	// float Slope = 0.1s);
-			  20);
-
-  __ParamShape.Init(0.0f, 0.0f, 1.0f,   	// float InitValue, float Min, float Max,
-			  1.0f, 1.0f, 	 				// float RapidIncrement, float SlowIncrement,
-			  nullptr,   	 				// CallbackType Callback = nullptr,
-			  0,		 	 				// float Slope = 0
-  	  	  	  21);
-
-  __ParamSpeed.Init(5.0f, 1.0, 10.0f,  		// float InitValue, float Min, float Max,
-			  0.5f, 0.05f, 	 			    // float RapidIncrement, float SlowIncrement,
-			  SpeedChange,	 			    // CallbackType Callback = nullptr,
-			  0,		 	 			    // float Slope = 0
-  	  	  	  22);
-
-  __ParamRatio.Init(0, -100, +100,			// float InitValue, float Min, float Max,
-			  5.0f, 1.0f, 			        // float RapidIncrement, float SlowIncrement,
-			  RatioChange,     				// CallbackType Callback = nullptr,
-			  0,		     				// float Slope = 0
-  	  	  	  23);
-
-  // Parameter View
-  DadUI::cParameterNumNormalView 		DeepView;
-  DadUI::cParameterDiscretView	 		ShapeView;
-  DadUI::cParameterNumNormalView		SpeedView;
-  DadUI::cParameterNumLeftRightView		RatioView;
-
-  DeepView.Init(&__ParamDepth, "Depth", "Depth",
-  	  	  	  	  "%", "%");
-
-  SpeedView.Init(&__ParamSpeed, "Freq.", "Frequency",
-  	  	  	  	  "Hz", "Hz");
-
-  RatioView.Init(&__ParamRatio, "Ratio", "Duty cycle ratio",
-	  	  	  	  "%", "%");
-
-  ShapeView.Init(&__ParamShape, "Shape", "Shape");
-  ShapeView.AddDiscreteValue("triang.", "Triangular"); //const std::string& ShortDiscretValue, const std::string& LongDiscretValue);
-  ShapeView.AddDiscreteValue("Square", "Square");      //const std::string& ShortDiscretValue, const std::string& LongDiscretValue);
-
-  // Menus
-  DadUI::cUIParameters ItemMainMenu;
-  DadUI::cUIParameters ItemLFOMenu2;
-  DadUI::cUIMemory	   ItemMenuMemory;
-
-  ItemMainMenu.Init(&DeepView, nullptr, &SpeedView);
-  ItemLFOMenu2.Init(&SpeedView, &ShapeView, &RatioView);
-  ItemMenuMemory.Init();
-
-  DadUI::cUIMenu Menu1;
-  Menu1.Init();
-
-  Menu1.addMenuItem(&ItemMainMenu, "Main");
-  Menu1.addMenuItem(&ItemLFOMenu2, "LFO");
-  Menu1.addMenuItem(&ItemMenuMemory, "Memory");
-
-  // Tap Tempo
-  DadUI::cTapTempo TapTempo;
-  TapTempo.Init(&DadUI::cPendaUI::m_FootSwitch2, &SpeedView, DadUI::eTempoType::frequency);
-
-  // Start UI
-  DadUI::cPendaUI::setActiveObject(&Menu1);
-
-  // DSP Initializations
-  __LFO.Initialize(SAMPLING_RATE, 1.0f/__ParamSpeed, 1, 10, __ParamRatio.getNormalizedValue());
+  // Delay Initialization
+  __Effect.Initialize();
 
   // Audio
   StartAudio();
@@ -372,7 +264,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
 // =====** DAD **=================================================================
 	  DadUI::cPendaUI::Update(); 				// Update UI
-	  DadUI::cPendaUI::m_Midi.ProcessBuffer();  // Update Midi
       __Display.flush();		 				// Update display
 
       // LED blinking: indicates that the audio loop is operating correctly.

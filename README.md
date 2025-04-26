@@ -1,40 +1,64 @@
 # PENDA Software
 ![Image1](Media/Penda_1.jpg)
-## 🚀 New Release: MIDI Protocol Support!
+## 🚀 New Release — Tremolo/Vibrato and Delay Effects Added!.
 ## Introduction
-PENDA Software is an advanced framework tailored for the **PENDA Hardware** platform [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware), enabling effortless development of high-quality audio effect pedals. Designed to streamline development, it allows creators to focus entirely on signal processing while the framework manages hardware complexities.
+PENDA Software is a collection of audio effects built on an advanced framework, specifically designed for the PENDA Hardware platform (GitHub Link). You can use this framework to easily develop your own high-quality audio effect pedals, focusing entirely on signal processing while the framework handles all hardware complexities. 
 
-## Author
+### Author
 This project is developed by DAD Design.
 
-## Key Features
-- **Full Integration**: Seamlessly works with **PENDA Hardware** and **DAISY Seed**.
-- **Optimized Audio Processing**: Built-in support for **Audio CODEC**, handling initialization and real-time processing.
-- **Memory Management**:
-  - **SDRAM** for efficient data storage.
-  - **QSPI Flash** for fast, non-volatile storage, including file persistence and flashing utilities.
-- **Graphical User Interface (GUI)**:
-  - **TFT Display** with **ST7789** driver support.
-  - **DaisySeedGFX2** for advanced UI visualization and customization.
-  - Interactive controls via **footswitches** (tap tempo), **encoders** and **MIDI protocol**.
-- **Development Environment**: Built with **STM32Cube**, offering modular and extensible architecture for easy customization.
-
-With **PENDA Hardware**, this framework provides an all-in-one solution for pedal effect development, eliminating the need for low-level hardware management.
-
-## Feedback
-I would be very happy to receive your feedback on the use of this project. If you've worked on any projects using PENDA Software or have suggestions, bug reports, or any questions, don't hesitate to contact me!
-
-## Resources
-- **PENDA-Hardware Repository**: [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)
-- **DaisySeedGFX2 Repository**: [GitHub Link](https://github.com/DADDesign-Projects/DaisySeedGFX2)
-- **Daisy_QSPI_Flasher Repository**: [GitHub Link] (https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher)
-
-## License
+### License
 PENDA Software is released under the **MIT License**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## TREMOLO DEMO
+### Feedback
+I would be very happy to receive your feedback on the use of this project. If you've worked on any projects using PENDA Software or have suggestions, bug reports, or any questions, don't hesitate to contact me!
+
+## Key Features
+### Audio Effects
+
+#### Tremolo/Vibrato
+
+- Low Frequency Oscillator (LFO) with adjustable speed and two selectable waveforms.
+- Adjustable duty cycle to modify the LFO waveform shape.
+- Independent adjustment of tremolo (amplitude modulation) and vibrato (frequency modulation) intensities.
+
+#### Delay
+
+- Main delay adjustable from 0.100 to 1.5 seconds.
+- Second delay line available with selectable rhythmic subdivisions.
+- Modulation applied to the delayed signal for subtle chorus/flanger-type effects.
+- Independent bass and treble control on echoes to fine-tune their tonal character.
+	
+#### PENDA Software Framework
+
+- Full Integration: Seamlessly works with PENDA Hardware and DAISY Seed.
+- Optimized Audio Processing: Built-in support for the Audio CODEC, handling initialization and real-time processing.
+- Memory Management:
+    - SDRAM for large, volatile data storage.
+    - QSPI Flash for fast, non-volatile storage, including file persistence and flashing utilities.
+
+- Graphical User Interface (GUI):
+    - TFT Display with ST7789 driver support.
+    - DaisySeedGFX2 for advanced visualization and PendaUI for customizable user interface management.
+    - Interactive controls via footswitches (tap tempo), rotary encoders, and MIDI protocol.
+
+- Development Environment:
+    - Built with STM32Cube, offering a modular and extensible architecture for easy customization.
+
+With PENDA Hardware, this framework provides an all-in-one solution for pedal effect development, eliminating the need for low-level hardware management.
+
+## Resources
+- **PENDA-Hardware Repository**: [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)
+- **DaisySeedGFX2 Repository**: [GitHub Link](https://github.com/DADDesign-Projects/DaisySeedGFX2)
+- **Daisy_QSPI_Flasher Repository**: [GitHub Link](https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher)
+
+
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+## Generic GUI
 ### Encoder Controls
 
 - **Encoder 0 (Right):**  
@@ -63,18 +87,6 @@ PENDA Software is released under the **MIT License**.
 
 #### Footswitch 2
 - **Tap tempo:** Controls tremolo rate
-
-### MIDI Controls
-CC#20 Depth
-CC#21 Shape
-CC#22 Freq.
-CC#23 Ratio
-CC#48 Preset Down
-CC#49 Preset Up
-CC#50 ON/OFF
-CC#51 ON
-CC#52 OFF
-PC#x  Preset x
 
 ### GUI Screenshot
 ![Image1](Media/PENDA_UI_1.jpg)

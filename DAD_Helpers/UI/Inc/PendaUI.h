@@ -44,7 +44,7 @@ public:
 
     // --------------------------------------------------------------------------
     // Initialize the user interface
-	static void Init(const char* pSplashTxt1, const char* pSplashTxt2, const char* pSplashTxt3, UART_HandleTypeDef *phuart);
+	static void Init(const char* pSplashTxt1, const char* pSplashTxt2, UART_HandleTypeDef *phuart);
 
 	// --------------------------------------------------------------------------
 	// Set the active GUI object
