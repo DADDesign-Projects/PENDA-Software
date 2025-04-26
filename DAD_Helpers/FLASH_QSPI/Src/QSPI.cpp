@@ -5,6 +5,7 @@
 // Copyright(c) 2025 Dad Design.
 //====================================================================================
 #include "QSPI.h"
+#include "Effect.h"
 #include <cstring>
 
 extern DadQSPI::cIS25LPxxx __Flash;
@@ -59,7 +60,7 @@ bool cQSPI_PersistentStorage::Init(){
 	uint32_t	ReadSize;
 
 	Load(kIDMain, &MainBloc, sizeof(MainBloc), ReadSize);
-	if((ReadSize != sizeof(MainBloc)) || (MainBloc.MaGicBuild != kMaGicBuild) || (MainBloc.NumBuild != kNumBuild)){
+	if((ReadSize != sizeof(MainBloc)) || (MainBloc.MaGicBuild != kMaGicBuild) || (MainBloc.NumBuild != kNumBuild + NUM_EFFECT)){
 		return true;
 	}
 	return false;
@@ -72,7 +73,7 @@ void cQSPI_PersistentStorage::InitializeMemory(){
 
 	InitializeBlock();
 	MainBloc.MaGicBuild = kMaGicBuild;
-	MainBloc.NumBuild = kNumBuild;
+	MainBloc.NumBuild = kNumBuild + NUM_EFFECT;
 	Save(kIDMain, &MainBloc, sizeof(MainBloc));
 }
 
@@ -148,6 +149,12 @@ bool cQSPI_PersistentStorage::Save(uint32_t saveNumber, const void* pDataSource,
 // @param DataSize size of the buffer
 // @param Size Will contain the size of loaded data 0 if load error
 //
+
+// ???Corrects a memory fault during the initialization of persistent memory blocks, but I don't know why it happens.
+// If you have an explanation, please let me know.
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+
 void cQSPI_PersistentStorage::Load(uint32_t saveNumber, void* pData, uint32_t DataSize, uint32_t& Size) {
     Size = 0;
     uint8_t* pBuffer = (uint8_t*)(pData);
@@ -179,6 +186,7 @@ void cQSPI_PersistentStorage::Load(uint32_t saveNumber, void* pData, uint32_t Da
     }
 }
 
+#pragma GCC pop_options
 // --------------------------------------------------------------------------
 // Deletes a save from flash memory by erasing all blocks in its chain
 // @param saveNumber Identifier of the save to delete
@@ -193,7 +201,7 @@ void cQSPI_PersistentStorage::Delete(uint32_t saveNumber) {
 
         __Flash.EraseSector((uint32_t)pSaveBloc);
         HAL_Delay(10);  // Delay to ensure erase completion
-        //SCB_InvalidateDCache_by_Addr((void *)pSaveBloc, DATA_SIZE);
+        SCB_InvalidateDCache_by_Addr((void *)pSaveBloc, DATA_SIZE);
         
         pSaveBloc = pNextBloc;  // Move to next block in chain
     }
@@ -231,18 +239,36 @@ sSaveBloc* cQSPI_PersistentStorage::findFreeBlock(sSaveBloc* StartBloc) const {
     return nullptr;  // No free blocks found     
 }
 
-// --------------------------------------------------------------------------   
-// Initialize Blocks
+// --------------------------------------------------------------------------
+// Initialize Blocks (optimized)
 void cQSPI_PersistentStorage::InitializeBlock(){
-    sSaveBloc* pSaveBloc = BASE_BLOC_ADRESSE;  
-    for (uint16_t i = 0; i < NUM_BLOCKS_PERSISTENT; i++) {
-        // Erase current block
-        __Flash.EraseSector((uint32_t)pSaveBloc);
-        HAL_Delay(1);  // Delay to ensure erase completion
-        //SCB_InvalidateDCache_by_Addr((void *)pSaveBloc, DATA_SIZE);
+    uint8_t* pSaveBloc = (uint8_t *)BASE_BLOC_ADRESSE;
+    uint32_t remainingSize = NUM_BLOCKS_PERSISTENT * BLOCK_SIZE;
 
-        pSaveBloc++;
+    while (remainingSize > 0) {
+        uint32_t addr = (uint32_t)pSaveBloc;
+
+        // Try to erase 64K block if aligned and enough size
+        if (remainingSize >= 64 * 1024) {
+            __Flash.EraseBlock64(addr);
+            pSaveBloc += 64 * 1024;
+            remainingSize -= 64 * 1024;
+        }
+        // Else try to erase 32K block
+        else if (remainingSize >= 32 * 1024) {
+            __Flash.EraseBlock32(addr);
+            pSaveBloc += 32 * 1024;
+            remainingSize -= 32 * 1024;
+        }
+        // Else erase sector (4K block)
+        else {
+            __Flash.EraseSector(addr);
+            pSaveBloc += BLOCK_SIZE;
+            remainingSize -= BLOCK_SIZE;
+        }
+        HAL_Delay(10);  // Delay to ensure erase completion
     }
+    SCB_InvalidateDCache_by_Addr((void *)BASE_BLOC_ADRESSE, NUM_BLOCKS_PERSISTENT * BLOCK_SIZE);
 }
 
 // --------------------------------------------------------------------------   
