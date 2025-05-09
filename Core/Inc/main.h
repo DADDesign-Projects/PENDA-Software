@@ -59,6 +59,7 @@ void MX_SAI1_Init(void);
 void MX_SPI1_Init(void);
 void MX_DMA2D_Init(void);
 void MX_USART1_UART_Init(void);
+void MX_I2C2_Init(void);
 
 /* USER CODE BEGIN EFP */
 
@@ -73,6 +74,10 @@ void MX_USART1_UART_Init(void);
 #define Encoder3_SW_GPIO_Port GPIOG
 #define FootSwitch1_Pin GPIO_PIN_9
 #define FootSwitch1_GPIO_Port GPIOG
+#define Rev7_Pin GPIO_PIN_5
+#define Rev7_GPIO_Port GPIOD
+#define Rev5_Pin GPIO_PIN_3
+#define Rev5_GPIO_Port GPIOD
 #define LED_Pin GPIO_PIN_7
 #define LED_GPIO_Port GPIOC
 #define Encoder2_SW_Pin GPIO_PIN_0
@@ -99,8 +104,6 @@ void MX_USART1_UART_Init(void);
 #define Encoder1_A_GPIO_Port GPIOA
 #define Encoder1_SW_Pin GPIO_PIN_1
 #define Encoder1_SW_GPIO_Port GPIOB
-#define RESET_CODEC_Pin GPIO_PIN_11
-#define RESET_CODEC_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 // use to determine if need erase persistent storage (Increment if change storage structure)
