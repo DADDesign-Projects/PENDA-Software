@@ -764,7 +764,10 @@ bool cDisplay::AddBloc(uint16_t x, uint16_t y) {
 #endif
         pFrame++;
         }
-    }    
+    }
+
+    // Disable interrupts to safely access shared resources
+    __disable_irq();
 
     // Increment the FIFO input index, wrapping around if necessary
     m_FIFO_in += 1;
@@ -774,6 +777,9 @@ bool cDisplay::AddBloc(uint16_t x, uint16_t y) {
 
     // Increment the count of elements in the FIFO
     m_FIFO_NbElements += 1;
+
+    // Re-enable interrupts once the safety check is complete
+    __enable_irq();
 
     // Return true to indicate successful addition to the FIFO
     return true;
