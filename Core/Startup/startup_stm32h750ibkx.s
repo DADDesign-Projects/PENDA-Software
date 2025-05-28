@@ -44,10 +44,16 @@ defined in linker script */
 /* end address for the .bss section. defined in linker script */
 .word  _ebss
 /* stack used for SystemInit_ExtMemCtl; always internal RAM used */
+
 /* DAD ==========================================================*/
 .word __sITCM
 .word __eITCM
 .word __lITCM
+
+.word __sTEXT
+.word __eTEXT
+.word __lTEXT
+/* End DAD ==========================================================*/
 
 /**
  * @brief  This is the code that gets called when the processor first
@@ -68,6 +74,7 @@ Reset_Handler:
   bl  ExitRun0Mode
 /* Call the clock system initialization function.*/
   bl  SystemInit
+
 /* DAD ==========================================================*/
 /* Copy ITCM segment from flash to ITCM RAM */
   ldr r0, =__sITCM
@@ -85,7 +92,25 @@ LoopCopyITCMInit:
   adds r4, r0, r3
   cmp r4, r1
   bcc CopyITCMInit
+#ifndef	USE_RAM
+/* Copy TEXT segment from flash to ITCM RAM */
+  ldr r0, =__sTEXT
+  ldr r1, =__eTEXT
+  ldr r2, =__lTEXT
+  movs r3, #0
+  b LoopCopyTEXTInit
 
+CopyTEXTInit:
+  ldr r4, [r2, r3]
+  str r4, [r0, r3]
+  adds r3, r3, #4
+
+LoopCopyTEXTInit:
+  adds r4, r0, r3
+  cmp r4, r1
+  bcc CopyTEXTInit
+#endif
+/* End DAD ==========================================================*/
 
 /* Copy the data segment initializers from flash to SRAM */
   ldr r0, =_sdata

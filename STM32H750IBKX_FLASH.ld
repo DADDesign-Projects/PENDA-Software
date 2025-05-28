@@ -63,13 +63,18 @@ SECTIONS
   {
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
+    KEEP(*(.text.Reset_Handler))
+    KEEP(*(.text.SystemInit))
+  	KEEP(*(.text.ExitRun0Mode))
     . = ALIGN(4);
   } >FLASH
 
   /* The program code and other data goes into FLASH */
+  __lTEXT = LOADADDR(.text);
   .text :
   {
     . = ALIGN(4);
+    __sTEXT = .;
     *(EXCLUDE_FILE(*DAD_STM_GFX2/Src/*.o) .text) 
     *(EXCLUDE_FILE(*DAD_STM_GFX2/Src/*.o) .text*)
     *(.glue_7)         /* glue arm to thumb code */
@@ -80,8 +85,9 @@ SECTIONS
     KEEP (*(.fini))
 
     . = ALIGN(4);
+    __eTEXT = .;
     _etext = .;        /* define a global symbols at end of code */
-  } >FLASH
+  } >RAM_D1 AT> FLASH
 
   /* Constant data goes into FLASH */
   .rodata :
