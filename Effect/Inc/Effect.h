@@ -15,7 +15,7 @@
 #define NUM_EFFECT 10
 #define EFFECT DadEffect::cDelay
 #define EFFECT_NAME "Delay"
-#define EFFECT_VERSION "Version 1.0"
+#define EFFECT_VERSION "Version 1.1"
 #endif
 
 // Configuring the PENDA Delay

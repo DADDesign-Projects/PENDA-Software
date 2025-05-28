@@ -191,7 +191,7 @@ public:
 
 	// --------------------------------------------------------------------------
 	// Draw view
-	virtual void drawStatFormView(DadGFX::cLayer* pStatLayer) = 0;
+	virtual void drawStatFormView(DadGFX::cLayer* pStatLayer, uint8_t NumParam) = 0;
 	virtual void drawDynFormView(DadGFX::cLayer* pDynLayer) = 0;
 	virtual void drawStatMainView(DadGFX::cLayer* pStatLayer)= 0;
 	virtual void drawDynMainView(DadGFX::cLayer* pDynLayer) = 0;
@@ -235,7 +235,7 @@ class cParameterNumNormalView : public cParameterNumView {
 public:
 	// --------------------------------------------------------------------------
 	// Draw view
-	void drawStatFormView(DadGFX::cLayer* pStatLayer) override;
+	void drawStatFormView(DadGFX::cLayer* pStatLayer, uint8_t NumParam) override;
 	void drawDynFormView(DadGFX::cLayer* pDynLayer) override;
 	void drawStatMainView(DadGFX::cLayer* pStatLayer) override;
 	void drawDynMainView(DadGFX::cLayer* pDynLayer) override;
@@ -271,7 +271,7 @@ public:
 
 	// --------------------------------------------------------------------------
 	// Draw view
-	void drawStatFormView(DadGFX::cLayer* pStatLayer) override;
+	void drawStatFormView(DadGFX::cLayer* pStatLayer, uint8_t NumParam) override;
 	void drawDynFormView(DadGFX::cLayer* pDynLayer) override;
 	void drawStatMainView(DadGFX::cLayer* pStatLayer) override;
 	void drawDynMainView(DadGFX::cLayer* pDynLayer) override;

@@ -58,7 +58,6 @@ void cTremolo::Initialize(){
 	                0.5f * UI_RT_SAMPLING_RATE, 24);
 
 	// ---------------- View Setup ----------------
-
 	m_FreqView.Init(&m_Freq, "Freq", "Frequency", "Hz", "Hz");
 	m_TremoloDeepView.Init(&m_TremoloDeep, "Tremolo", "Tremolo depth", "%", "%");
 	m_VibratoDeepView.Init(&m_VibratoDeep, "Vibrato", "Vibrato depth", "%", "%");
@@ -68,17 +67,17 @@ void cTremolo::Initialize(){
 	m_LFOShapeView.AddDiscreteValue("Square", "Square");
 
 	// ---------------- Menu Grouping ----------------
-
 	m_ItemTremoloMenu.Init(&m_TremoloDeepView, &m_VibratoDeepView, &m_FreqView);
 	m_ItemLFOMenu.Init(&m_LFOShapeView, &m_LFORatioView, &m_FreqView);
 	m_ItemMenuMemory.Init();
+	m_ItemInputVolume.Init();
 
 	// ---------------- Main Menu Configuration ----------------
-
 	m_Menu.Init();
 	m_Menu.addMenuItem(&m_ItemTremoloMenu, "Main");
 	m_Menu.addMenuItem(&m_ItemLFOMenu, "LFO");
 	m_Menu.addMenuItem(&m_ItemMenuMemory, "Mem.");
+	m_Menu.addMenuItem(&m_ItemInputVolume, "Input");
 
 	// Sync with footswitch for tap-tempo
 	m_TapTempo.Init(&DadUI::cPendaUI::m_FootSwitch2, &m_FreqView, DadUI::eTempoType::frequency);
@@ -87,7 +86,6 @@ void cTremolo::Initialize(){
 	DadUI::cPendaUI::setActiveObject(&m_Menu);
 
 	// ---------------- LFO and Delay Buffer Initialization ----------------
-
 	m_LFO.Initialize(SAMPLING_RATE, m_Freq, 1, 10, m_LFORatio.getNormalizedValue());
 
 	m_ModulationLineRight.Initialize(__ModulationBufferRight, DELAY_BUFFER_SIZE);
@@ -99,8 +97,19 @@ void cTremolo::Initialize(){
 
 // --------------------------------------------------------------------------
 // Audio processing routine: applies volume and pitch modulation
-void cTremolo::Process(AudioBuffer *pIn, AudioBuffer *pOut){
+void cTremolo::Process(AudioBuffer *pIn, AudioBuffer *pOut, bool OnOff){
 	m_LFO.Step(); // Update LFO phase
+	m_ItemInputVolume.Process(pIn);		// Input volume VU-Meter
+
+	float Left;
+	float Right;
+	if(false == OnOff){
+		Left = 0.0f;
+		Right = 0.0f;
+	}else{
+		Left = pIn->Left;
+		Right = pIn->Right;
+	}
 
 	float VolumeModulation = 0.0f;
 	switch(static_cast<uint32_t>(m_LFOShape.getValue())){
@@ -119,8 +128,8 @@ void cTremolo::Process(AudioBuffer *pIn, AudioBuffer *pOut){
 	float Delay = DELAY_BUFFER_SIZE * LFOSin * m_CoefComp * m_VibratoDeep / 100.0f;
 
 	// Push current samples to delay line and read modulated delayed output
-	m_ModulationLineLeft.Push(pIn->Left);
-	m_ModulationLineRight.Push(pIn->Right);
+	m_ModulationLineLeft.Push(Left);
+	m_ModulationLineRight.Push(Right);
 
 	pOut->Left = m_ModulationLineLeft.Pull(Delay) * VolumeModulation;
 	pOut->Right = m_ModulationLineRight.Pull(Delay) * VolumeModulation;

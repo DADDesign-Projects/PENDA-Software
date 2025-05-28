@@ -14,17 +14,9 @@
 #include "cDCO.h"
 #include "BiquadFilter.h"
 #include "cDelayLine.h"
+#include "UISystem.h"
 
 namespace DadEffect {
-
-// ------------------------------------------------------------------------
-// UI-triggered parameter callbacks.
-// These functions are called when parameters are modified by the user.
-// ------------------------------------------------------------------------
-//void SpeedChange(DadUI::cParameter *pParameter, uint32_t CallbackUserData);
-//void BassChange(DadUI::cParameter *pParameter, uint32_t CallbackUserData);
-//void TrebleChange(DadUI::cParameter *pParameter, uint32_t CallbackUserData);
-
 
 //***********************************************************************************
 //  cDelay
@@ -49,7 +41,7 @@ public:
 
 	// --------------------------------------------------------------------------
 	// Audio processing function: processes one input/output audio buffer.
-	ITCM void Process(AudioBuffer *pIn, AudioBuffer *pOut);
+	ITCM void Process(AudioBuffer *pIn, AudioBuffer *pOut, bool OnOff);
 
 	// --------------------------------------------------------------------------
 	// Static callbacks triggered when UI parameters change.
@@ -66,35 +58,43 @@ protected:
 	// User Interface Components
 	// ==============================================================================
 
-	// Parameters (linked to UI and DSP)
-	DadUI::cParameter m_Time;           // Delay time (ms or synced)
-	DadUI::cParameter m_Repeat;         // Feedback level for main delay
-	DadUI::cParameter m_MixDelay2;      // Mix level of secondary delay
-	DadUI::cParameter m_Repeat2;        // Feedback level of secondary delay
-	DadUI::cParameter m_SubDelay2;      // Subdivision for second delay (sync options)
-	DadUI::cParameter m_Bass;           // Low-frequency tone control
-	DadUI::cParameter m_Treble;         // High-frequency tone control
+	// Parameters
+	DadUI::cParameter m_Time;			// Time of delays
+	DadUI::cParameter m_Repeat;   		// Feedback level for delay 1
+	//DadUI::cParameter m_Mix;      		// Mix level of delays
+
+	DadUI::cParameter m_SubDelay;		// Subdivision of delay1
+	DadUI::cParameter m_RepeatDelay2;	// Feedback level for delay 2
+	DadUI::cParameter m_BlendD1D2;		// blend of delay 1 and delay 2
+
+	DadUI::cParameter m_Bass;
+	DadUI::cParameter m_Treble;
+
 	DadUI::cParameter m_ModulationDeep; // LFO depth (modulates delay time)
 	DadUI::cParameter m_ModulationSpeed;// LFO rate
-	DadUI::cParameter m_ModulationRatio;// LFO waveform ratio (may be fixed)
 
-	// UI views (visual representations of the parameters)
-	DadUI::cParameterNumNormalView m_TimeView;
-	DadUI::cParameterNumNormalView m_RepeatView;
-	DadUI::cParameterNumNormalView m_MixDelay2View;
-	DadUI::cParameterNumNormalView m_Repeat2View;
-	DadUI::cParameterDiscretView   m_SubDelay2View;
+	// View
+	DadUI::cParameterNumNormalView 	m_TimeView;
+	DadUI::cParameterNumNormalView 	m_RepeatView;
+	//DadUI::cParameterNumNormalView 	m_MixView;
+
+	DadUI::cParameterDiscretView 	m_SubDelayView;
+	DadUI::cParameterNumNormalView 	m_RepeatDelay2View;
+	DadUI::cParameterNumNormalView 	m_BlendD1D2View;
+
 	DadUI::cParameterNumNormalView m_BassView;
 	DadUI::cParameterNumNormalView m_TrebleView;
+
 	DadUI::cParameterNumNormalView m_ModulationDeepView;
 	DadUI::cParameterNumNormalView m_ModulationSpeedView;
 
 	// UI parameter groups
-	DadUI::cUIParameters m_ItemDelayMenu;
-	DadUI::cUIParameters m_ItemDelay2Menu;
-	DadUI::cUIParameters m_ItemToneMenu;
-	DadUI::cUIParameters m_ItemLFOMenu;
-	DadUI::cUIMemory     m_ItemMenuMemory;  // Persistent UI memory
+	DadUI::cUIParameters  m_ItemDelay1Menu;
+	DadUI::cUIParameters  m_ItemDelay2Menu;
+	DadUI::cUIParameters  m_ItemToneMenu;
+	DadUI::cUIParameters  m_ItemLFOMenu;
+	DadUI::cUIMemory      m_ItemMenuMemory;  	// Persistent UI memory
+	DadUI::cUIImputVolume m_ItemInputVolume;    // Input volume menu
 
 	// Main user interface menu
 	DadUI::cUIMenu m_Menu;
@@ -105,18 +105,23 @@ protected:
 	// ==============================================================================
 	// DSP Components
 	// ==============================================================================
+	DadDSP::cDCO 	m_LFO;              // LFO for delay time modulation
 
-	DadDSP::cDCO m_LFO;                 // LFO for delay time modulation
-	DadDSP::cBiQuad m_BassFilter;       // High-pass filter (bass EQ) for left delay
-	DadDSP::cBiQuad m_TrebleFilter;     // Low-pass filter (treble EQ) for left delay
-	DadDSP::cBiQuad m_BassFilter2;      // High-pass filter (bass EQ) for right delay
-	DadDSP::cBiQuad m_TrebleFilter2;    // Low-pass filter (treble EQ) for right delay
+	DadDSP::cBiQuad m_BassFilter1;       // High-pass filter (bass EQ) for left delay
+	DadDSP::cBiQuad m_TrebleFilter1;     // Low-pass filter (treble EQ) for left delay
+	DadDSP::cBiQuad m_BassFilter2;
+	DadDSP::cBiQuad m_TrebleFilter2;
 
-	// Stereo delay lines (main and secondary)
-	DadDSP::cDelayLine m_DelayLineRight;
-	DadDSP::cDelayLine m_DelayLineLeft;
+	// Stereo delay lines
+	DadDSP::cDelayLine m_Delay1LineRight;
+	DadDSP::cDelayLine m_Delay1LineLeft;
 	DadDSP::cDelayLine m_Delay2LineRight;
 	DadDSP::cDelayLine m_Delay2LineLeft;
+
+	//float			m_MemMixDelay;		// Memorize MixDelay Value
+	//float 			m_MemVol1Left;		// Memorize Vol1Left
+	//float 			m_MemVol1Right;		// Memorize Vol1Right
+	//float 			m_GainWet;			// GainWet
 };
 
 } // namespace DadEffect

@@ -46,7 +46,7 @@ void cUIParameters::Activate(){
 
 	// Draw the first parameter view if it exists, otherwise clear the layers
 	if (m_parameterViews[0]) {
-		m_parameterViews[0]->drawStatFormView(cPendaUI::m_pStatParam1Layer);
+		m_parameterViews[0]->drawStatFormView(cPendaUI::m_pStatParam1Layer, 1);
 		m_parameterViews[0]->drawDynFormView(cPendaUI::m_pDynParam1Layer);
 	} else {
 		DadUI::cPendaUI::m_pDynParam1Layer->eraseLayer();
@@ -55,7 +55,7 @@ void cUIParameters::Activate(){
 
 	// Draw the second parameter view if it exists, otherwise clear the layers
 	if (m_parameterViews[1]) {
-		m_parameterViews[1]->drawStatFormView(cPendaUI::m_pStatParam2Layer);
+		m_parameterViews[1]->drawStatFormView(cPendaUI::m_pStatParam2Layer, 2);
 		m_parameterViews[1]->drawDynFormView(cPendaUI::m_pDynParam2Layer);
 	} else {
 		DadUI::cPendaUI::m_pDynParam2Layer->eraseLayer();
@@ -64,7 +64,7 @@ void cUIParameters::Activate(){
 
 	// Draw the third parameter view if it exists, otherwise clear the layers
 	if (m_parameterViews[2]) {
-		m_parameterViews[2]->drawStatFormView(cPendaUI::m_pStatParam3Layer);
+		m_parameterViews[2]->drawStatFormView(cPendaUI::m_pStatParam3Layer, 3);
 		m_parameterViews[2]->drawDynFormView(cPendaUI::m_pDynParam3Layer);
 	} else {
 		DadUI::cPendaUI::m_pDynParam3Layer->eraseLayer();

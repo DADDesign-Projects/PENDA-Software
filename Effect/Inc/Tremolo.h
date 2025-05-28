@@ -14,6 +14,7 @@
 #include "Parameter.h"
 #include "cDCO.h"
 #include "cDelayLine.h"
+#include "UISystem.h"
 
 namespace DadEffect {
 
@@ -39,7 +40,7 @@ public:
 	// --------------------------------------------------------------------------
 	// Audio processing function
 	// Applies tremolo and vibrato to the input audio buffer.
-	ITCM void Process(AudioBuffer *pIn, AudioBuffer *pOut);
+	ITCM void Process(AudioBuffer *pIn, AudioBuffer *pOut, bool OnOff);
 
 	// --------------------------------------------------------------------------
 	// UI Callbacks
@@ -71,6 +72,7 @@ protected:
 	DadUI::cUIParameters m_ItemTremoloMenu;   // Group for tremolo/vibrato parameters
 	DadUI::cUIParameters m_ItemLFOMenu;       // Group for LFO shape and ratio
 	DadUI::cUIMemory     m_ItemMenuMemory;    // Persistent parameter storage
+	DadUI::cUIImputVolume m_ItemInputVolume;  // Input volume menu
 
 	// Main menu container
 	DadUI::cUIMenu m_Menu;

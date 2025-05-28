@@ -121,10 +121,10 @@ void cParameterView::Init(cParameter* pParameter, const std::string& ShortName, 
 void cParameterNumView::Init(cParameter* pParameter, const std::string& ShortName, const std::string& LongName,
 		  const std::string& ShortUnit, const std::string& LongUnit, uint8_t StringPrecision){
 
-		cParameterView::Init(pParameter, ShortName, LongName);
-		m_ShortUnit = ShortUnit;
-		m_LongUnit = LongUnit;
-		m_StringPrecision = StringPrecision;
+	cParameterView::Init(pParameter, ShortName, LongName);
+	m_ShortUnit = ShortUnit;
+	m_LongUnit = LongUnit;
+	m_StringPrecision = StringPrecision;
 }
 
 // --------------------------------------------------------------------------
@@ -207,7 +207,7 @@ std::string cParameterNumView::ValueToString() const{
 
 // --------------------------------------------------------------------------
 // Draw Static Form view
-void cParameterNumNormalView::drawStatFormView(DadGFX::cLayer* pStatLayer){
+void cParameterNumNormalView::drawStatFormView(DadGFX::cLayer* pStatLayer, uint8_t NumParam){
     // Clear the static layer to prepare for new content
     pStatLayer->eraseLayer();
 
@@ -221,12 +221,20 @@ void cParameterNumNormalView::drawStatFormView(DadGFX::cLayer* pStatLayer){
     pStatLayer->drawArc(PARAM_WIDTH/2, PARAM_HEIGHT/2,
                             PARAM_POT_RADIUS+1,
                             PARAM_POT_RADIUS+1+180, (PARAM_POT_ALPHA_MAX+180) % 360,
-							LAYER_POT_INDEX_COLOR);//LAYER_POT_COLOR); // Outer arc
+							LAYER_POT_LINE_COLOR);//LAYER_POT_COLOR); // Outer arc
 
     pStatLayer->drawArc(PARAM_WIDTH/2, PARAM_HEIGHT/2,
                             PARAM_POT_RADIUS-9,
                             PARAM_POT_ALPHA_MIN+180, (PARAM_POT_ALPHA_MAX+180) % 360,
-							LAYER_POT_INDEX_COLOR);//LAYER_POT_COLOR); // Inner arc
+							LAYER_POT_LINE_COLOR);//LAYER_POT_COLOR); // Inner arc
+
+    // Draw number of parameter
+    char Buffer[30];
+	snprintf(Buffer, sizeof(Buffer), "%d", NumParam );
+	uint16_t NumberWidth = pStatLayer->getTextWidth(Buffer);
+	uint16_t NumberHeight = pStatLayer->getTextHeight();
+    pStatLayer->setCursor((PARAM_WIDTH-NumberWidth)/2, (PARAM_HEIGHT-NumberHeight)/2);
+    pStatLayer->drawText(Buffer);
 
     // Calculate the endpoints for the lines delimiting the potentiometer
     float CosAlpha =  std::cos(Deg2Rad(90.0f - (float)PARAM_POT_ALPHA_MIN)); // Cosine of angle
@@ -243,12 +251,12 @@ void cParameterNumNormalView::drawStatFormView(DadGFX::cLayer* pStatLayer){
     uint16_t y0 = PARAM_HEIGHT/2 + static_cast<uint16_t>(DeltaY0); // Outer point y
     uint16_t x1 = PARAM_WIDTH/2 + static_cast<uint16_t>(DeltaX1); // Inner point x
     uint16_t y1 = PARAM_HEIGHT/2 + static_cast<uint16_t>(DeltaY1); // Inner point y
-    pStatLayer->drawLine(x0, y0, x1, y1, LAYER_POT_INDEX_COLOR);//LAYER_POT_COLOR); // Draw the line
+    pStatLayer->drawLine(x0, y0, x1, y1, LAYER_POT_LINE_COLOR);//LAYER_POT_COLOR); // Draw the line
 
     // Calculate and draw the right boundary line (mirrored horizontally)
     x0 = PARAM_WIDTH/2 - static_cast<uint16_t>(DeltaX0); // Outer point x (mirrored)
     x1 = PARAM_WIDTH/2 - static_cast<uint16_t>(DeltaX1); // Inner point x (mirrored)
-    pStatLayer->drawLine(x0, y0, x1, y1, LAYER_POT_INDEX_COLOR);//LAYER_POT_COLOR); // Draw the line
+    pStatLayer->drawLine(x0, y0, x1, y1, LAYER_POT_LINE_COLOR);//LAYER_POT_COLOR); // Draw the line
 
 }
 
@@ -261,7 +269,7 @@ void cParameterNumNormalView::drawDynFormView(DadGFX::cLayer* pDynLayer){
 
     // Render the parameter's current value as text
     char Buffer[30];
-	snprintf(Buffer, sizeof(Buffer), "%s %s", ValueToString().c_str(), m_LongUnit.c_str());
+	snprintf(Buffer, sizeof(Buffer), "%s %s", ValueToString().c_str(), m_ShortUnit.c_str());
     uint16_t TextWitdh = pDynLayer->getTextWidth(Buffer); 	// Measure the text width
     pDynLayer->setCursor((PARAM_WIDTH - TextWitdh)/2,
     					  PARAM_HEIGHT - ((PARAM_VAL_HEIGHT + pDynLayer->getTextHeight())/2)); // Position the text
@@ -279,7 +287,6 @@ void cParameterNumNormalView::drawDynFormView(DadGFX::cLayer* pDynLayer){
                            PARAM_POT_RADIUS - i + 1, // Reduce the radius for each arc
                            PARAM_POT_ALPHA_MIN + 180, // Starting angle
                            AlphaMax, // Ending angle
-						   //TAB_POT_COLOR[i]);
                            LAYER_POT_INDEX_COLOR); // Color of the arc
     }
 }
@@ -327,7 +334,7 @@ void cParameterNumLeftRightView::drawDynFormView(DadGFX::cLayer* pDynLayer){
     // Render the parameter's current value as text
     // Render the parameter's current value as text
     char Buffer[30];
-	snprintf(Buffer, sizeof(Buffer), "%s %s", ValueToString().c_str(), m_LongUnit.c_str());
+	snprintf(Buffer, sizeof(Buffer), "%s %s", ValueToString().c_str(), m_ShortUnit.c_str());
     uint16_t TextWitdh = pDynLayer->getTextWidth(Buffer); 	// Measure the text width
     pDynLayer->setCursor((PARAM_WIDTH - TextWitdh)/2,
     					  PARAM_HEIGHT - ((PARAM_VAL_HEIGHT + pDynLayer->getTextHeight())/2)); // Position the text
@@ -375,7 +382,7 @@ void cParameterDiscretView::AddDiscreteValue(const std::string& ShortDiscretValu
 
 // --------------------------------------------------------------------------
 // Draw Static Form view
-void cParameterDiscretView::drawStatFormView(DadGFX::cLayer* pStatLayer){
+void cParameterDiscretView::drawStatFormView(DadGFX::cLayer* pStatLayer, uint8_t NumParam){
     // Clear the static layer to prepare for new content
     pStatLayer->eraseLayer();
     if(m_TabDiscretValues.size() == 0) return;
@@ -389,7 +396,7 @@ void cParameterDiscretView::drawStatFormView(DadGFX::cLayer* pStatLayer){
     pStatLayer->drawArc(PARAM_WIDTH/2, PARAM_HEIGHT/2,
                             PARAM_DISCRET_POT_RADIUS,
                             PARAM_DISCRET_POT_RADIUS+4+180, (PARAM_POT_ALPHA_MAX+180) % 360,
-                            LAYER_POT_COLOR);
+							LAYER_POT_LINE_COLOR);//LAYER_POT_COLOR);
 
     uint8_t NbDiscretValues = m_TabDiscretValues.size();
     if(NbDiscretValues != 0){
@@ -398,10 +405,19 @@ void cParameterDiscretView::drawStatFormView(DadGFX::cLayer* pStatLayer){
     	for(uint8_t i = 1; i <= NbDiscretValues; i++){
 			float X = static_cast<float>(PARAM_DISCRET_POT_RADIUS) * std::cos(Alpha);
 			float Y = static_cast<float>(PARAM_DISCRET_POT_RADIUS) * std::sin(Alpha);
-			pStatLayer->drawCircle((PARAM_WIDTH/2) + X, PARAM_HEIGHT/2 - Y, PARAM_DISCRET_RADIUS+1, LAYER_POT_COLOR);
+			pStatLayer->drawCircle((PARAM_WIDTH/2) + X, PARAM_HEIGHT/2 - Y, PARAM_DISCRET_RADIUS+1, LAYER_POT_LINE_COLOR);//LAYER_POT_COLOR);
 			Alpha -= IncAlpha;
 		}
     }
+
+    // Draw number of parameter
+    char Buffer[30];
+	snprintf(Buffer, sizeof(Buffer), "%d", NumParam );
+	uint16_t NumberWidth = pStatLayer->getTextWidth(Buffer);
+	uint16_t NumberHeight = pStatLayer->getTextHeight();
+    pStatLayer->setCursor((PARAM_WIDTH-NumberWidth)/2, (PARAM_HEIGHT-NumberHeight)/2);
+    pStatLayer->drawText(Buffer);
+
 }
 // --------------------------------------------------------------------------
 // Draw Dynamic Form view
@@ -429,7 +445,7 @@ void cParameterDiscretView::drawDynFormView(DadGFX::cLayer* pDynLayer){
 			float X = static_cast<float>(PARAM_DISCRET_POT_RADIUS) * std::cos(Alpha);
 			float Y = static_cast<float>(PARAM_DISCRET_POT_RADIUS) * std::sin(Alpha);
 			pDynLayer->drawFillCircle((PARAM_WIDTH/2) + X, PARAM_HEIGHT/2  - Y, PARAM_DISCRET_RADIUS+1, NumValue == i ? LAYER_POT_INDEX_COLOR : BACKCOLOR);
-			pDynLayer->drawCircle((PARAM_WIDTH/2) + X, PARAM_HEIGHT/2 - Y, PARAM_DISCRET_RADIUS+1, LAYER_POT_COLOR);
+			pDynLayer->drawCircle((PARAM_WIDTH/2) + X, PARAM_HEIGHT/2 - Y, PARAM_DISCRET_RADIUS+1, LAYER_POT_LINE_COLOR);//LAYER_POT_COLOR);
 			Alpha -= IncAlpha;
 		}
     }

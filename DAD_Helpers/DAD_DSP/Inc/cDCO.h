@@ -108,6 +108,21 @@ namespace DadDSP {
 		}
 
 		// --------------------------------------------------------------------------
+		// Reads the phase-shifted triangle wave output value
+		inline float getTriangleValuePhased(float phaseShift) {
+		    // Apply phase shift and wrap to [0, 1)
+		    float t = fmod(m_dcoValue + phaseShift, 1.0f);
+		    if (t < 0.0f) t += 1.0f;
+
+		    // Creates a symmetrical triangle waveform
+		    if (t > 0.5f) {
+		        return 2.0f - (t * 2.0f);
+		    } else {
+		        return t * 2.0f;
+		    }
+		}
+
+		// --------------------------------------------------------------------------
 		// Reads the triangle wave output value with duty cycle variation
 		inline float getTriangleModValue() {
 			// Adjusts the waveform based on duty cycle

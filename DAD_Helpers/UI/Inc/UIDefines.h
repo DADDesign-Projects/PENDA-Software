@@ -100,19 +100,9 @@ extern QFLASH_SECTION DadQSPI::cQSPI_FlasherStorage  __FlashStorage;
 
 //#define LAYER_POT_INDEX_COLOR DadGFX::sColor(255, 50, 221, 255)
 #define LAYER_POT_INDEX_COLOR DadGFX::sColor(94, 235, 201, 255)
-//constexpr DadGFX::sColor TAB_POT_COLOR[] = {
-//		{41, 103, 91, 255},
-//		{54, 139, 123, 255},
-//		{69, 179, 157, 255},
-//		{83, 218, 191, 255},
-//		{95, 251, 220, 255},
-//		{136, 252, 229,255},
-//		{95, 251, 220, 255},
-//		{83, 218, 191, 255},
-//		{69, 179, 157, 255},
-//		{54, 139, 123, 255},
-//		{41, 103, 91, 255}
-//};
+#define LAYER_POT_LINE_COLOR DadGFX::sColor(78, 191, 164, 255)
+//#define LAYER_POT_LINE_COLOR DadGFX::sColor(83, 252, 212, 255)
+//#define LAYER_POT_LINE_COLOR DadGFX::sColor(171, 255, 236, 255)
 
 //#define LAYER_POT_INDEX_COLOR DadGFX::sColor(50, 238, 255, 255)
 //#define LAYER_POT_INDEX_COLOR DadGFX::sColor(255,100,50,255)
