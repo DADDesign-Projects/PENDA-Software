@@ -174,7 +174,13 @@ uint16_t cUIVuMeterView::SampleToDbPixel(float sample) {
 	if (db > 0) db = 0;            // Clamp to 0dB
 	return static_cast<uint16_t>((((db - MIN_DB) / -MIN_DB) * VU_WIDTH) + 0.5f);  // Scale to pixel width
 }
-
+/*
+DadQSPI::cSerialize Serializer; 										// Create a serializer object
+cPendaUI::Save(Serializer, SysSerializeID);								// Serialize the current state
+const uint8_t* pBuffer = nullptr; 										// Pointer to the serialized data
+uint32_t Size = Serializer.getBuffer(&pBuffer);							// Get the size of the serialized data
+__PersistentStorage.Save(SysSerializeID, pBuffer, Size);
+*/
 // ------------------------------------------------------------------------------
 // Function: ProcessSample
 // Description: Processes a single audio sample to update meter and peak values
@@ -210,21 +216,37 @@ void cUIVuMeterView::ProcessSample(float sample, float *pMeter, int32_t *pPeak) 
 // Function: Init
 // Description: Initializes the UI components and parameters
 void cUIImputVolume::Init(){
-	/* PENDA II
 	// Initialize parameters with ranges and callbacks
-	m_InputVolume.Init(50.0f, 0.0f, 100.0f, 10.0f, 1.0f, VolumePanChange, (uint32_t) this);
-	m_InputPanning.Init(0.0f, -100.0f, +100.0f, 5.0f, 1.0f, VolumePanChange, (uint32_t) this);
+	m_InputVolume.Init(50.0f, 0.0f, 100.0f, 10.0f, 1.0f, VolumePanChange, (uint32_t) this, 0.0f, 0, SysSerializeID);
+	m_InputPanning.Init(0.0f, -100.0f, +100.0f, 5.0f, 1.0f, VolumePanChange, (uint32_t) this, 0.0f, 0, SysSerializeID);
+	// Restore value for input volume and panning
 
+	uint32_t Size = __PersistentStorage.getSize(SysSerializeID);	  		// Get the size of the data
+	if (Size != 0) {
+		uint8_t* pBuffer = new uint8_t[Size]; 								// Allocate memory for the data
+		if (pBuffer != nullptr) {
+			uint32_t SizeLoad=0;
+			__PersistentStorage.Load(SysSerializeID, pBuffer, Size, SizeLoad); // Load data
+			if(SizeLoad != 0){
+				DadQSPI::cSerialize Serializer; 							// Create a serializer object
+				Serializer.setBuffer(pBuffer, Size); 						// Set the buffer with the restored data
+				cPendaUI::Restore(Serializer, SysSerializeID);				// Deserialize and restore the state
+			}
+			delete[] pBuffer; 												// Free the allocated memory
+		}
+	}
 	// Initialize parameter views
 	m_InputVolumeView.Init(&m_InputVolume, "Input Vol.", "Input Volume", "%", "%");
 	m_InputPanningView.Init(&m_InputPanning, "Pan", "Input Panning", "%", "%");
-    */
+
 	// Initialize VU meter
 	m_UIVuMeterView.Init();
-
-	// Initialize base class with parameter views
+#ifdef PENDAI
 	cUIParameters::Init(nullptr, nullptr, nullptr);
-	//cUIParameters::Init(&m_InputVolumeView, nullptr, &m_InputPanningView);
+#elif defined(PENDAII)
+	// Initialize base class with parameter views
+	cUIParameters::Init(&m_InputVolumeView, nullptr, &m_InputPanningView);
+#endif
 }
 
 // ------------------------------------------------------------------------------
@@ -239,6 +261,18 @@ void cUIImputVolume::Activate(){
 // Function: DeActivate
 // Description: Deactivates the UI and releases focus
 void cUIImputVolume::DeActivate(){
+	// Save the current state if input volume or panning has changed
+	if((m_InputVolume != m_MemInputVolume) ||
+			(m_InputPanning != m_MemInputPanning)) {
+		DadQSPI::cSerialize Serializer; 										// Create a serializer object
+		cPendaUI::Save(Serializer, SysSerializeID);								// Serialize the current state
+		const uint8_t* pBuffer = nullptr; 										// Pointer to the serialized data
+		uint32_t Size = Serializer.getBuffer(&pBuffer);							// Get the size of the serialized data
+		__PersistentStorage.Save(SysSerializeID, pBuffer, Size);
+		m_MemInputVolume = m_InputVolume;
+		m_MemInputPanning = m_InputPanning;
+	}
+
 	cUIParameters::DeActivate();
 	if(cPendaUI::HasFocus(&m_UIVuMeterView)) {
 		cPendaUI::ReleaseFocus();
@@ -254,7 +288,7 @@ void cUIImputVolume::Update(){
 		m_UIVuMeterView.Draw();
 	}
 };
-/* PENDA II
+
 // ------------------------------------------------------------------------------
 // Static Function: VolumePanChange
 // Description: Callback for volume/pan parameter changes
@@ -278,5 +312,4 @@ void cUIImputVolume::VolumePanChange(DadUI::cParameter *pParameter, uint32_t Cal
 	cPendaUI::m_Volumes.Volume1Change(static_cast<uint8_t>(Left * 255.0f + 0.5f),
 							static_cast<uint8_t>(Right * 255.0f + 0.5f));
 }
-*/
 } // namespace DadUI

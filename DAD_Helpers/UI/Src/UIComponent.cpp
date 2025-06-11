@@ -192,13 +192,15 @@ void cUIParameters::OnMainFocusGained(){
 // Function: Init
 // Description: Initializes the memory UI. Sets default values for member variables,
 //              restores the active memory slot, and requests UI focus.
-void cUIMemory::Init() {
+void cUIMemory::Init(uint32_t SerializeID) {
+	m_SerializeID = SerializeID; 						// Set serialization ID for saving/restoring state
+	m_Memory.Init(SerializeID);     					// Initialize memory manager with serialization ID
 	m_isActive = false;               					// Set UI as inactive initially
 	m_MemorySlot = 0;                 					// Default memory slot
 	m_MemChoice = eMemChoice::No;     					// Default user choice
 	m_MemState = eMemState::Save;     					// Default memory operation state
 	m_ActionExec = 0;                 					// No action executed initially
-	m_MemorySlot = cPendaUI::m_Memory.getActiveSlot(); 	// Get the active memory slot
+	m_MemorySlot = m_Memory.getActiveSlot(); 			// Get the active memory slot
 	RestoreSlot();                    					// Restore data from the active slot
 	cPendaUI::RequestFocus(this);     					// Request UI focus
 	m_PressCount = 0;
@@ -231,7 +233,7 @@ void cUIMemory::DeActivate(){
 	m_isActive = false; 								// Set UI as inactive
 	cPendaUI::m_pStatMainUpLayer->changeZOrder(0); 		// Reset static layer Z-order
 	cPendaUI::m_pDynMainUpLayer->changeZOrder(0); 		// Reset dynamic layer Z-order
-	m_MemorySlot = cPendaUI::m_Memory.getActiveSlot(); 	// Update active memory slot
+	m_MemorySlot = m_Memory.getActiveSlot(); 			// Update active memory slot
 	drawMainDownDyn(); 									// Redraw dynamic UI elements
 }
 
@@ -303,7 +305,7 @@ void cUIMemory::Update(){
 				case eMemState::Save: SaveSlot(); break; // Save data to slot
 				case eMemState::Delete:
 					if (1 == isErasable(m_MemorySlot)) {
-						cPendaUI::m_Memory.Erase(m_MemorySlot); // Delete data from slot
+						m_Memory.Erase(m_MemorySlot); // Delete data from slot
 					}
 					break;
 				case eMemState::Load:
@@ -324,7 +326,7 @@ void cUIMemory::Update(){
 // --------------------------------------------------------------------------
 // Function: IncrementSlot
 void cUIMemory::IncrementSlot(int8_t Increment){
-	uint8_t activeSlot = cPendaUI::m_Memory.getActiveSlot();
+	uint8_t activeSlot = m_Memory.getActiveSlot();
 	uint8_t targetSlot = activeSlot;
 
 	do {
@@ -465,7 +467,7 @@ void cUIMemory::drawMainDownDyn(){
 	cPendaUI::m_pDynMainDownLayer->drawText(Buff); 							// Draw the slot number
 
 	// Draw "Modified" indicator if the memory is dirty
-	if (1 == cPendaUI::m_Memory.isDirty()) {
+	if (cPendaUI::isDirty(m_SerializeID)) {
 		cPendaUI::m_pStatMainDownLayer->setFont(cPendaUI::m_pFont_L); 			// Set L font
 		uint16_t TextWidth = cPendaUI::m_pStatMainDownLayer->getTextWidth("MEM.");
 		cPendaUI::m_pDynMainDownLayer->setFont(cPendaUI::m_pFont_M); 		// Set M font
@@ -490,24 +492,24 @@ void cUIMemory::drawMainDownDyn(){
 // Description: Saves the current state to the selected memory slot.
 void cUIMemory::SaveSlot() {
 	DadQSPI::cSerialize Serializer; 										// Create a serializer object
-	cPendaUI::Save(Serializer); 											// Serialize the current state
+	cPendaUI::Save(Serializer, m_SerializeID);								// Serialize the current state
 	const uint8_t* pBuffer = nullptr; 										// Pointer to the serialized data
 	uint32_t Size = Serializer.getBuffer(&pBuffer);							// Get the size of the serialized data
-	cPendaUI::m_Memory.Save(m_MemorySlot, pBuffer, Size); 					// Save the data to the memory slot
+	m_Memory.Save(m_MemorySlot, pBuffer, Size); 					// Save the data to the memory slot
 }
 
 // --------------------------------------------------------------------------
 // Function: RestoreSlot
 // Description: Restores the state from the selected memory slot.
 void cUIMemory::RestoreSlot() {
-	uint32_t Size = cPendaUI::m_Memory.getSize(m_MemorySlot); 				// Get the size of the data in the slot
+	uint32_t Size = m_Memory.getSize(m_MemorySlot); 				// Get the size of the data in the slot
 	if (Size != 0) {
 		uint8_t* pBuffer = new uint8_t[Size]; 								// Allocate memory for the data
 		if (pBuffer != nullptr) {
-			if (0 != cPendaUI::m_Memory.Restore(m_MemorySlot, pBuffer, Size)) { // Restore the data
+			if (0 != m_Memory.Restore(m_MemorySlot, pBuffer, Size)) { // Restore the data
 				DadQSPI::cSerialize Serializer; 							// Create a serializer object
 				Serializer.setBuffer(pBuffer, Size); 						// Set the buffer with the restored data
-				cPendaUI::Restore(Serializer); 								// Deserialize and restore the state
+				cPendaUI::Restore(Serializer, m_SerializeID);				// Deserialize and restore the state
 			}
 			delete[] pBuffer; 												// Free the allocated memory
 		}
@@ -618,7 +620,7 @@ void cTapTempo::Update(){
 
 			// If the timer reaches zero, release focus and trigger a redraw
 			if (m_focusTimer == 0) {
-				cPendaUI::m_Memory.setDirty();
+				//cPendaUI::setDirty();
 				cPendaUI::ReleaseFocus();
 				cPendaUI::ReDraw();
 			}

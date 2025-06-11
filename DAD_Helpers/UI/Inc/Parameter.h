@@ -38,7 +38,8 @@ public:
 			  CallbackType 	Callback = nullptr,
 			  uint32_t		CallbackUserData = 0,
 			  float 		Slope = 0,
-			  uint8_t 		Control = 0xFF);
+			  uint8_t 		Control = 0xFF,
+			  uint32_t 		SerializeID = 0);
 
     // --------------------------------------------------------------------------
     // Increment the parameter value by a number of steps
@@ -136,18 +137,34 @@ public:
     // Refresh the current value smoothly according to the slope
     void RTProcess()override;
 
+    // ------------------------------------------------------------------------
+    // // Get if the object is modified
+    bool isDirty(uint32_t SerializeID) override{
+    	if(m_SerializeID == SerializeID){
+    		return m_Dirty;
+    	}else{
+    		return false;
+    	}
+    }
+
     // --------------------------------------------------------------------------
     // Serialize the parameter to a string
-    void Save(DadQSPI::cSerialize &Serializer) override{
-        Serializer.Push(m_TargetValue);
+    void Save(DadQSPI::cSerialize &Serializer, uint32_t SerializeID) override{
+        if(m_SerializeID == SerializeID){
+            m_Dirty = false;
+        	Serializer.Push(m_TargetValue);
+        }
     }
 
     // --------------------------------------------------------------------------
     // Deserialize the parameter from a string
-    void Restore(DadQSPI::cSerialize &Serializer)override{
-        float Value;
-    	Serializer.Pull(Value);
-    	setValue(Value);
+    void Restore(DadQSPI::cSerialize &Serializer, uint32_t SerializeID)override{
+        if(m_SerializeID == SerializeID){
+            m_Dirty = false;
+			float Value;
+			Serializer.Pull(Value);
+			setValue(Value);
+        }
     }
 
     // --------------------------------------------------------------------------
@@ -158,17 +175,19 @@ protected:
     // --------------------------------------------------------------------------
     // Member variable
     //
-    float m_Min = 0.0f;             // Minimum value
-    float m_Max = 1.0f;             // Maximum value
-    float m_RapidIncrement = 0.1f;  // Increment step size (rapid)
-    float m_SlowIncrement = 0.01f;  // Increment step size (slow)
-    float m_Value = 0.0;           // Current value
-    float m_Step;        			// Step change value to 1/m_SamplingRate;
-    float m_TargetValue;  			// Target parameter value
-    float m_Slope;
+    float 		m_Min = 0.0f;             	// Minimum value
+    float 		m_Max = 1.0f;             	// Maximum value
+    float 		m_RapidIncrement = 0.1f;  	// Increment step size (rapid)
+    float 		m_SlowIncrement = 0.01f;	// Increment step size (slow)
+    float 		m_Value = 0.0;           	// Current value
+    float 		m_Step;        				// Step change value to 1/m_SamplingRate;
+    float 		m_TargetValue;  			// Target parameter value
+    float 		m_Slope;
+    uint32_t	m_SerializeID = 0; 			// Unique ID for serialization
+    CallbackType m_Callback;        		// Callback function
+    uint32_t	m_CallbackUserData;		    // Callback user data
+    bool 		m_Dirty;
 
-    CallbackType m_Callback;        // Callback function
-    uint32_t	 m_CallbackUserData;// Callback user data
 };
 
 //***********************************************************************************

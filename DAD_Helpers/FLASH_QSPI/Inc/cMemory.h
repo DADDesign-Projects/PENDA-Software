@@ -4,7 +4,7 @@
 // Manages the storage of effect parameters
 //====================================================================================
 #include "main.h"
-
+#include "PendaUI.h"
 #include "QSPI.h"
 #include "Serialize.h"
 
@@ -13,12 +13,6 @@ extern DadQSPI::cQSPI_PersistentStorage __PersistentStorage;
 
 // Number of memory slots
 #define NB_MEM_SLOT 10
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmultichar"
-constexpr uint32_t IDMemStorage='MeID'; // Identifier for persistent class memory
-constexpr uint32_t IDMemSlot='MeS0'; // Identifier for persistent memory of a slot
-#pragma GCC diagnostic pop
 
 namespace DadQSPI {
 
@@ -40,19 +34,7 @@ public:
 
     // ------------------------------------------------------------------------
     // Initializes the class
-    void Init();
-
-    // ------------------------------------------------------------------------
-    // Marks a specific save slot as dirty (modified)
-    inline void setDirty(){
-            m_Dirty = 1;
-    }
-
-    // ------------------------------------------------------------------------
-    // Checks if a save slot is marked as dirty
-    inline uint8_t isDirty() const{
-        return m_Dirty;
-    }
+    void Init(uint32_t SerializeID);
 
     // ------------------------------------------------------------------------
     // Saves the state of the object into a specified memory slot
@@ -86,7 +68,7 @@ public:
     // Get size of the slot
     inline uint32_t getSize(uint8_t saveNumber) const{
     	if(saveNumber < NB_MEM_SLOT){
-    		return __PersistentStorage.getSize(IDMemSlot + saveNumber);
+    		return __PersistentStorage.getSize(m_SerializeID + 1 + saveNumber);
     	}else{
     		return 0;
     	}
@@ -96,6 +78,6 @@ protected:
     // ------------------------------------------------------------------------
     // Data member
     sMemoryPersistent 	m_MemoryPersistent;		// Persistent data of class
-    uint8_t  			m_Dirty;				// Flags indicating if current active slot  have unsaved changes
+    uint32_t 			m_SerializeID;			// Serialization ID for saving/restoring state
 };
 } // namespace DadQSPI

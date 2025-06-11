@@ -64,6 +64,7 @@ void I2C2_ER_IRQHandler(void);
 void SPI1_IRQHandler(void);
 void USART1_IRQHandler(void);
 void FMC_IRQHandler(void);
+void TIM6_DAC_IRQHandler(void);
 void QUADSPI_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 

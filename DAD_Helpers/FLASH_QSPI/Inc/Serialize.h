@@ -25,11 +25,12 @@ class cSerializedObject{
 public:
     // --------------------------------------------------------------------------
     // Serialize the object
-    virtual void Save(DadQSPI::cSerialize &Serializer) = 0;
+    virtual void Save(DadQSPI::cSerialize &Serializer, uint32_t SerializeID) = 0;
 
     // --------------------------------------------------------------------------
     // Deserialize the object
-    virtual void Restore(DadQSPI::cSerialize &Serializer) = 0;
+    virtual void Restore(DadQSPI::cSerialize &Serializer, uint32_t SerializeID) = 0;
+
 };
 
 //***********************************************************************************
@@ -98,7 +99,5 @@ public:
 private:
     std::vector<uint8_t> buffer; // Buffer to hold serialized data
     size_t readIndex = 0;        // Current read position in the buffer
-
-
 };
 } //DadQSPI

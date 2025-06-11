@@ -17,7 +17,8 @@ void cParameter::Init(float InitValue, float Min, float Max,
 					  float RapidIncrement, float SlowIncrement,
 					  CallbackType Callback, uint32_t CallbackUserData,
 					  float Slope,
-					  uint8_t Control){
+					  uint8_t Control,
+					  uint32_t SerializeID) {
     m_Min = Min;
     m_Max = Max;
     m_RapidIncrement = RapidIncrement;
@@ -31,10 +32,13 @@ void cParameter::Init(float InitValue, float Min, float Max,
     }
     m_TargetValue = InitValue;
     m_Slope = Slope;
+
     if(Control != 0xFF){
     	cPendaUI::m_Midi.addControlChangeCallback(Control, (uint32_t) this, MIDIControlChangeCallBack );
     }
 
+    m_SerializeID = SerializeID;
+    m_Dirty = false;
     // Ensure the initial value is within bounds
 	setValue(InitValue);
 }
@@ -84,7 +88,7 @@ void cParameter::Increment(int32_t nbStep, bool Switch) {
     } else {
         Value += m_SlowIncrement * nbStep; // Use slow increment
     }
-	cPendaUI::m_Memory.setDirty();
+	m_Dirty = true;
     setValue(Value);
 }
 
@@ -95,7 +99,7 @@ void cParameter::MIDIControlChangeCallBack(uint8_t control, uint8_t value, uint3
 	value = value > 127 ? 127 : value;
 	float NewVal = pThis->m_Min + (value * (pThis->m_Max - pThis->m_Min)) / 127.0;
 	pThis->setValue(NewVal);
-	cPendaUI::m_Memory.setDirty();
+	pThis->m_Dirty = true;
 	cPendaUI::ReDraw();
 }
 

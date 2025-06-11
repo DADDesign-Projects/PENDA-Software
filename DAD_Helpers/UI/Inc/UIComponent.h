@@ -112,7 +112,7 @@ public:
     // Function: Init
     // Description: Initializes the memory UI. Sets default values for member variables,
     //              restores the active memory slot, and requests UI focus.
-    void Init();
+    void Init(uint32_t SerializeID);
 
     // --------------------------------------------------------------------------
     // Function: Activate
@@ -166,7 +166,7 @@ protected:
     // Parameters: memSlot - The memory slot to check.
     // Returns: 1 if the slot is loadable, 0 otherwise.
     inline uint8_t isLoadable(uint8_t memSlot) {
-        return cPendaUI::m_Memory.isSave(memSlot);
+        return m_Memory.isSave(memSlot);
     }
 
     // --------------------------------------------------------------------------
@@ -175,7 +175,7 @@ protected:
     // Parameters: memSlot - The memory slot to check.
     // Returns: 1 if the slot is erasable, 0 otherwise.
     inline uint8_t isErasable(uint8_t memSlot) {
-        if ((memSlot != cPendaUI::m_Memory.getActiveSlot()) && (1 == cPendaUI::m_Memory.isSave(memSlot))) {
+        if ((memSlot != m_Memory.getActiveSlot()) && (1 == m_Memory.isSave(memSlot))) {
             return 1;
         } else {
             return 0;
@@ -224,15 +224,20 @@ protected:
     // Description: Restores the state from the selected memory slot.
     void RestoreSlot();
 
+
+
 protected:
 	// --------------------------------------------------------------------------
 	// Member variables
-	bool		m_isActive;     // Indicates if the UI is active
-	int16_t 	m_MemorySlot;  	// Current memory slot
-	eMemChoice 	m_MemChoice; 	// User's choice (Yes/No)
-	eMemState 	m_MemState;   	// Current memory operation state
-	uint8_t		m_ActionExec;	// Indicates if an action has been executed
-	uint64_t	m_PressCount;
+	bool				m_isActive;     // Indicates if the UI is active
+	int16_t 			m_MemorySlot;  	// Current memory slot
+	eMemChoice 			m_MemChoice; 	// User's choice (Yes/No)
+	eMemState 			m_MemState;   	// Current memory operation state
+	uint8_t				m_ActionExec;	// Indicates if an action has been executed
+	uint64_t			m_PressCount;
+	uint32_t    		m_SerializeID;  // Serialization ID for saving/restoring state
+
+	DadQSPI::cMemory 	m_Memory;		// Slot memory manager
  };
 
 //***********************************************************************************

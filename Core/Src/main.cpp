@@ -28,6 +28,7 @@
 #include "cMemory.h"
 #include "QSPI.h"
 #include "PendaUI.h"
+#include "cMonitor.h"
 #include "Effect.h"
 
 
@@ -63,6 +64,8 @@ DMA_HandleTypeDef hdma_sai1_b;
 
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
+
+TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
@@ -110,6 +113,15 @@ DadQSPI::cQSPI_PersistentStorage 			  __PersistentStorage;
 // UI Object Manager
 DadUI::cUIObjectManager __UIObjManager;
 
+// Monitor
+#ifdef MONITOR
+DadMisc::cMonitor __Monitor;
+volatile float CPULoad;
+volatile float EffectTime;
+volatile float Frequency;
+#endif
+
+// Effect Manager
 EFFECT		__Effect;
 
 // ------------------------------------------------------------------------
@@ -122,25 +134,29 @@ uint32_t __CT=0; 			// Cycle counter
 
 // ITCM: Optimized for fast execution (placed in Instruction Tightly Coupled Memory)
 ITCM void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut) {
-    // Get the current ON/OFF state from the UI (real-time safe)
-    bool OnOff = DadUI::cPendaUI::RTProcess();
+	__Monitor.startMonitoring();
 
+	// Get the current ON/OFF state from the UI (real-time safe)
+    bool OnOff = DadUI::cPendaUI::RTProcess();
     // Process each sample in the audio buffer
     for (size_t i = 0; i < AUDIO_BUFFER_SIZE; i++) {
-        // Detect state change only when audio is near silence (avoid clicks)
+    	// Detect state change only when audio is near silence (avoid clicks)
         if ((OnOff != __MemOnOff) && (fabs(pIn->Right + pIn->Left) < 0.001f)) {
             __MemOnOff = OnOff; // Update state if crossing threshold
         }
 
-       	__Effect.Process(pIn, pOut, __MemOnOff);
+        // Process effect
+        __Effect.Process(pIn, pOut, __MemOnOff);
 
-       	// Advance buffer pointers (post-increment)
+        // Advance buffer pointers (post-increment)
     	pOut++;
     	pIn++;
     }
 
     // Increment cycle counter for visual feedback:
     __CT++;
+
+    __Monitor.stopMonitoring();
 }
 
 // ------------------------------------------------------------------------
@@ -237,6 +253,7 @@ int main(void)
   MX_SPI1_Init();
   MX_DMA2D_Init();
   MX_USART1_UART_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
 // =====** DAD **=================================================================
@@ -247,7 +264,9 @@ int main(void)
 
   SCB_EnableICache(); 			// Enable I-Cache
   SCB_EnableDCache(); 			// Enable D-Cache
-
+#ifdef MONITOR
+  __Monitor.Init();
+#endif
   // Revision configuration
   MX_DMA_Init();
   if(GPIO_PIN_RESET == HAL_GPIO_ReadPin(Rev5_GPIO_Port, Rev5_Pin)){
@@ -275,7 +294,12 @@ int main(void)
 
   // Display Initializations
   INIT_DISPLAY(__Display, &hspi1);
+#ifdef PENDAI
   __Display.setOrientation(Rotation::Degre_90);
+#elif defined(PENDAII)
+  __Display.setOrientation(Rotation::Degre_270);
+#endif
+
   DadGFX::cLayer *pBack = ADD_LAYER(Back, 0,0,1);
   DadGFX::cFont Font(FONTL);
 
@@ -313,12 +337,12 @@ int main(void)
   pBack->eraseLayer(DadGFX::sColor(0,0,0,255));
 
   // GUI Initializations
-  DadUI::cPendaUI::Init(EFFECT_NAME, EFFECT_VERSION, &huart1);
+  DadUI::cPendaUI::Init(EFFECT_NAME, EFFECT_VERSION, &huart1, &htim6);
 
-  // Delay Initialization
+  // Effect Initialization
   __Effect.Initialize();
 
-  // Audio
+  // Audio launch
   StartAudio();
 
   // Display refresh
@@ -330,7 +354,6 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
   while (1)
   {
     /* USER CODE END WHILE */
@@ -345,7 +368,12 @@ int main(void)
     	  __CT =0;
     	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
       }
-
+#ifdef MONITOR
+      CPULoad = __Monitor.getCPULoad_percent();
+      EffectTime = __Monitor.getAverageExecutionTime_us();
+      Frequency = __Monitor.getAverageFrequency_Hz();
+      __Monitor.reset();
+#endif
 	  HAL_Delay(100);
 
 // ===** End DAD **=================================================================
@@ -661,6 +689,44 @@ void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 2400-1;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 10-1;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -866,13 +932,17 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOI_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, LED_Pin|TFT_Reset_Pin|TFT_DC_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, SSPI_DATA_Pin|SSPI_CLK_Pin|AUDIO_MUTE_Pin|LED_Pin
+                          |TFT_Reset_Pin|TFT_DC_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SSPI_CS_GPIO_Port, SSPI_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : Encoder3_A_Pin Encoder3_B_Pin Encoder1_SW_Pin */
   GPIO_InitStruct.Pin = Encoder3_A_Pin|Encoder3_B_Pin|Encoder1_SW_Pin;
@@ -885,6 +955,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : SSPI_DATA_Pin SSPI_CS_Pin SSPI_CLK_Pin AUDIO_MUTE_Pin */
+  GPIO_InitStruct.Pin = SSPI_DATA_Pin|SSPI_CS_Pin|SSPI_CLK_Pin|AUDIO_MUTE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Rev7_Pin Rev5_Pin Encoder0_B_Pin */
   GPIO_InitStruct.Pin = Rev7_Pin|Rev5_Pin|Encoder0_B_Pin;

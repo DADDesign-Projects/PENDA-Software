@@ -11,6 +11,11 @@
 #include "UIDefines.h"
 #include "UIComponent.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmultichar"
+constexpr uint32_t SysSerializeID ='Sys0'; // SerializeID for System
+#pragma GCC diagnostic pop
+
 namespace DadUI {
 
 // Constants for VU meter behavior
@@ -155,6 +160,9 @@ protected:
 
     cParameterNumNormalView     m_InputVolumeView;  // Volume parameter view
     cParameterNumLeftRightView  m_InputPanningView; // Pan parameter view
+
+    float     					m_MemInputVolume;  	// Volume parameter view
+    float						m_MemInputPanning; 	// Pan parameter view
 
     cUIVuMeterView              m_UIVuMeterView;    // VU meter visualization
 };

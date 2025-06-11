@@ -94,22 +94,19 @@ cSwitch			cPendaUI::m_FootSwitch2;  		// Foot switch 2
 
 cMidi			cPendaUI::m_Midi;   			// MIDI manager
 
+DadMisc::cVolume cPendaUI::m_Volumes;			// Volume Manager
+
 iGUIObject*	 	cPendaUI::m_pActiveObject;  	// Currently active GUI object
 
 std::stack<iGUIObject*> cPendaUI::m_MainFocusStack;// Stack of Main focus
-
-
-// Slot memory manager
-DadQSPI::cMemory cPendaUI::m_Memory;
 
 bool 			cPendaUI::m_AudioState;
 
 
 // --------------------------------------------------------------------------
 // Initialize the user interface
-void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, UART_HandleTypeDef *phuart){
+void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, UART_HandleTypeDef *phuart, TIM_HandleTypeDef* phtim6){
 
-	m_Memory.Init();
 
 	constexpr uint32_t EncoderUpdatePeriodMs = UIRT_RATE * 0.001f;  // 1  ms Encoder update period in milliseconds
 	constexpr uint32_t SwitchUpdatePeriodMs = UIRT_RATE * 0.005f;   // 5  ms  Switch update period in milliseconds
@@ -156,7 +153,11 @@ void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, UART_Handl
 
     m_pBackLayer->setFont(m_pFont_XLB);
     m_pBackLayer->setCursor(96, 5);
+#ifdef PENDAI
     m_pBackLayer->drawText("PENDA");
+#elif defined(PENDA)
+    m_pBackLayer->drawText("PENDA II");
+#endif
 
     m_pBackLayer->setFont(m_pFont_L);
     m_pBackLayer->setCursor(101, 65);
@@ -175,7 +176,6 @@ void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, UART_Handl
     TextWidth = m_pBackLayer->getTextWidth(pSplashTxt2);
     m_pBackLayer->setCursor(TextCentre - (TextWidth/2), 185);
     m_pBackLayer->drawText(pSplashTxt2);
-
 
     __Display.flush();
 
@@ -239,6 +239,10 @@ void cPendaUI::Init(const char* pSplashTxt1, const char* pSplashTxt2, UART_Handl
 	m_pActiveObject= nullptr;
 
 	m_Midi.Initialize(phuart);
+
+	// Volumes Initialization
+	m_Volumes.init(phtim6);
+
 	m_AudioState = false;
 }
 
@@ -249,8 +253,8 @@ iGUIObject* cPendaUI::setActiveObject(iGUIObject* pActiveObject){
 	if(nullptr != pOldActiveOject){
 		pOldActiveOject->DeActivate();  // Deactivate the old object
 	}
-		m_pActiveObject = pActiveObject;  // Set the new active object
-		pActiveObject->Activate();  // Activate the new object
+	m_pActiveObject = pActiveObject;  // Set the new active object
+	pActiveObject->Activate();  // Activate the new object
 
 	return pOldActiveOject;  // Return the old active object
 }
@@ -300,18 +304,29 @@ void cPendaUI::ReDraw(){
 
 // --------------------------------------------------------------------------
 // Save UI state
-void cPendaUI::Save(DadQSPI::cSerialize &Serializer){
+void cPendaUI::Save(DadQSPI::cSerialize &Serializer, uint32_t SerializeID){
 	for(iGUIObject *pObject : __UIObjManager.m_TabGUIObject){
-		pObject->Save(Serializer);
+		pObject->Save(Serializer, SerializeID);
 	}
 }
 
 // --------------------------------------------------------------------------
 // Restore UI state
-void cPendaUI::Restore(DadQSPI::cSerialize &Serializer){
+void cPendaUI::Restore(DadQSPI::cSerialize &Serializer, uint32_t SerializeID){
 	for(iGUIObject *pObject : __UIObjManager.m_TabGUIObject){
-		pObject->Restore(Serializer);
+		pObject->Restore(Serializer, SerializeID);
 	}
+}
+
+// ------------------------------------------------------------------------
+// Get (modified)
+bool cPendaUI::isDirty(uint32_t SerializeID){
+	for(iGUIObject *pObject : __UIObjManager.m_TabGUIObject){
+		if(true == pObject->isDirty(SerializeID)){
+			return true;
+		}
+	}
+	return false;
 }
 
 // --------------------------------------------------------------------------

@@ -16,6 +16,12 @@
 #include "cDelayLine.h"
 #include "UISystem.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmultichar"
+constexpr uint32_t DelaySerializeID ='Del0'; // SerializeID for Delay Effect
+#pragma GCC diagnostic pop
+
+
 namespace DadEffect {
 
 //***********************************************************************************
@@ -61,7 +67,7 @@ protected:
 	// Parameters
 	DadUI::cParameter m_Time;			// Time of delays
 	DadUI::cParameter m_Repeat;   		// Feedback level for delay 1
-	//DadUI::cParameter m_Mix;      		// Mix level of delays
+	DadUI::cParameter m_Mix;      		// Mix level of delays
 
 	DadUI::cParameter m_SubDelay;		// Subdivision of delay1
 	DadUI::cParameter m_RepeatDelay2;	// Feedback level for delay 2
@@ -76,7 +82,7 @@ protected:
 	// View
 	DadUI::cParameterNumNormalView 	m_TimeView;
 	DadUI::cParameterNumNormalView 	m_RepeatView;
-	//DadUI::cParameterNumNormalView 	m_MixView;
+	DadUI::cParameterNumNormalView 	m_MixView;
 
 	DadUI::cParameterDiscretView 	m_SubDelayView;
 	DadUI::cParameterNumNormalView 	m_RepeatDelay2View;
@@ -118,10 +124,10 @@ protected:
 	DadDSP::cDelayLine m_Delay2LineRight;
 	DadDSP::cDelayLine m_Delay2LineLeft;
 
-	//float			m_MemMixDelay;		// Memorize MixDelay Value
-	//float 			m_MemVol1Left;		// Memorize Vol1Left
-	//float 			m_MemVol1Right;		// Memorize Vol1Right
-	//float 			m_GainWet;			// GainWet
+	float			m_MemMixDelay;		// Memorize MixDelay Value
+	float 			m_MemVol1Left;		// Memorize Vol1Left
+	float 			m_MemVol1Right;		// Memorize Vol1Right
+	float 			m_GainWet;			// GainWet
 };
 
 } // namespace DadEffect

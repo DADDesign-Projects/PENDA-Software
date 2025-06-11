@@ -60,7 +60,7 @@ bool cQSPI_PersistentStorage::Init(){
 	uint32_t	ReadSize;
 
 	Load(kIDMain, &MainBloc, sizeof(MainBloc), ReadSize);
-	if((ReadSize != sizeof(MainBloc)) || (MainBloc.MaGicBuild != kMaGicBuild) || (MainBloc.NumBuild != kNumBuild + NUM_EFFECT)){
+	if((ReadSize != sizeof(MainBloc)) || (MainBloc.MaGicBuild != kMaGicBuild) || (MainBloc.NumBuild != kNumBuild)){
 		return true;
 	}
 	return false;
@@ -73,7 +73,7 @@ void cQSPI_PersistentStorage::InitializeMemory(){
 
 	InitializeBlock();
 	MainBloc.MaGicBuild = kMaGicBuild;
-	MainBloc.NumBuild = kNumBuild + NUM_EFFECT;
+	MainBloc.NumBuild = kNumBuild;
 	Save(kIDMain, &MainBloc, sizeof(MainBloc));
 }
 

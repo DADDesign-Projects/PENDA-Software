@@ -60,6 +60,7 @@ void MX_SPI1_Init(void);
 void MX_DMA2D_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_I2C2_Init(void);
+void MX_TIM6_Init(void);
 
 /* USER CODE BEGIN EFP */
 
@@ -72,12 +73,20 @@ void MX_I2C2_Init(void);
 #define Encoder3_B_GPIO_Port GPIOB
 #define Encoder3_SW_Pin GPIO_PIN_10
 #define Encoder3_SW_GPIO_Port GPIOG
+#define SSPI_DATA_Pin GPIO_PIN_11
+#define SSPI_DATA_GPIO_Port GPIOC
+#define SSPI_CS_Pin GPIO_PIN_10
+#define SSPI_CS_GPIO_Port GPIOC
 #define FootSwitch1_Pin GPIO_PIN_9
 #define FootSwitch1_GPIO_Port GPIOG
 #define Rev7_Pin GPIO_PIN_5
 #define Rev7_GPIO_Port GPIOD
 #define Rev5_Pin GPIO_PIN_3
 #define Rev5_GPIO_Port GPIOD
+#define SSPI_CLK_Pin GPIO_PIN_9
+#define SSPI_CLK_GPIO_Port GPIOC
+#define AUDIO_MUTE_Pin GPIO_PIN_8
+#define AUDIO_MUTE_GPIO_Port GPIOC
 #define LED_Pin GPIO_PIN_7
 #define LED_GPIO_Port GPIOC
 #define Encoder2_SW_Pin GPIO_PIN_0
@@ -107,7 +116,22 @@ void MX_I2C2_Init(void);
 
 /* USER CODE BEGIN Private defines */
 // use to determine if need erase persistent storage (Increment if change storage structure)
-#define kNumBuild 0
+
+// =====** DAD **=================================================================
+
+// PENDA  Hardware
+#define PENDAI
+
+// PENDA II Hardware
+//#define PENDAII
+
+// use to determine if need erase persistent storage (Increment if change storage structure)
+#define kNumBuild 1
+
+// Define MONITOR to monitor the effect loop execution time.
+#ifdef DEBUG
+#define MONITOR
+#endif
 
 // Define FONTH to load resources in code (.h file).
 // Comment out #define FONTH to use resources loaded in QSPI flash. See https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher  for more information.
@@ -133,6 +157,8 @@ struct AudioBuffer{
 	float Left;
 };
 extern HAL_StatusTypeDef StartAudio();
+
+// =====** END DAD **=================================================================
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
