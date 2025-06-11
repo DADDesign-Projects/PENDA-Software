@@ -9,6 +9,7 @@ PENDAII Software is a collection of audio effects built on an advanced framework
 - Reworked memory handling to enable independent preset saving without interference between different effects.
 - Added automatic and independent system parameter saving, currently storing input volume and balance on PENDAII.
 - Fixed a bug in the graphics library when using 18-bit color formats.
+- Added a CPU load and execution time monitoring class for performance diagnostics.
     
 ### Author
 This project is developed by DAD Design.
