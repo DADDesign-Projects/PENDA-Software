@@ -758,9 +758,9 @@ bool cDisplay::AddBloc(uint16_t x, uint16_t y) {
                 *pBloc++ = (pFrame->m_R & 0xF8) | (pFrame->m_G >> 5 );
                 *pBloc++ = (pFrame->m_B >> 3) | ((pFrame->m_G << 3 )  & 0xE0);
 #else
-                *pBloc++ = pFrame->m_R();
-                *pBloc++ = pFrame->m_G();
-                *pBloc++ = pFrame->m_B();
+                *pBloc++ = pFrame->m_R;
+                *pBloc++ = pFrame->m_G;
+                *pBloc++ = pFrame->m_B;
 #endif
         pFrame++;
         }
