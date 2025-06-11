@@ -1,8 +1,8 @@
-# PENDAII-Software
-PENDAII-Software is the new version of the software framework specifically designed to take full advantage of the PENDAII stereo hardware.
+# PENDA Software
+![Image1](Media/Penda_1.jpg)
 
 ## Introduction
-PENDAII Software is a collection of audio effects built on an advanced framework, specifically designed for the PENDAII Hardware platform ([GitHub Link](https://github.com/DADDesign-Projects/PENDAII-Hardware)). You can use this framework to easily develop your own high-quality audio effect pedals, focusing entirely on signal processing while the framework handles all hardware complexities. 
+PENDA Software is a collection of audio effects built on an advanced framework, specifically designed for the PENDA Hardware platform ([GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)). You can use this framework to easily develop your own high-quality audio effect pedals, focusing entirely on signal processing while the framework handles all hardware complexities. 
 
 ### Last evolutions
 - Restructured codebase to ensure compatibility between the PENDA and PENDAII hardware platforms.
@@ -10,12 +10,12 @@ PENDAII Software is a collection of audio effects built on an advanced framework
 - Added automatic and independent system parameter saving, currently storing input volume and balance on PENDAII.
 - Fixed a bug in the graphics library when using 18-bit color formats.
 - Added a CPU load and execution time monitoring class for performance diagnostics.
-    
+
 ### Author
 This project is developed by DAD Design.
 
 ### License
-PENDAII Software is released under the **MIT License**.
+PENDA Software is released under the **MIT License**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -24,6 +24,12 @@ I would be very happy to receive your feedback on the use of this project. If yo
 
 ## Key Features
 ### Audio Effects
+
+#### Tremolo/Vibrato
+
+- Low Frequency Oscillator (LFO) with adjustable speed and two selectable waveforms.
+- Adjustable duty cycle to modify the LFO waveform shape.
+- Independent adjustment of tremolo (amplitude modulation) and vibrato (frequency modulation) intensities.
 
 #### Delay
 
@@ -34,7 +40,7 @@ I would be very happy to receive your feedback on the use of this project. If yo
 	
 #### PENDA Software Framework
 
-- Full Integration: Seamlessly works with PENDAII Hardware and DAISY Seed.
+- Full Integration: Seamlessly works with PENDA Hardware and DAISY Seed.
 - Optimized Audio Processing: Built-in support for the Audio CODEC, handling initialization and real-time processing.
 - Memory Management:
     - SDRAM for large, volatile data storage.
@@ -48,10 +54,10 @@ I would be very happy to receive your feedback on the use of this project. If yo
 - Development Environment:
     - Built with STM32Cube, offering a modular and extensible architecture for easy customization.
 
-With PENDAII Hardware, this framework provides an all-in-one solution for pedal effect development, eliminating the need for low-level hardware management.
+With PENDA Hardware, this framework provides an all-in-one solution for pedal effect development, eliminating the need for low-level hardware management.
 
 ## Resources
-- **PENDAII-Hardware Repository**: [GitHub Link](https://github.com/DADDesign-Projects/PENDAII-Hardware)
+- **PENDA-Hardware Repository**: [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)
 - **DaisySeedGFX2 Repository**: [GitHub Link](https://github.com/DADDesign-Projects/DaisySeedGFX2)
 - **Daisy_QSPI_Flasher Repository**: [GitHub Link](https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher)
 
@@ -95,5 +101,3 @@ With PENDAII Hardware, this framework provides an all-in-one solution for pedal 
 ![Image2](Media/PENDA_UI_2.jpg)
 
 ![Image3](Media/PENDA_UI_3.jpg)
-
-
