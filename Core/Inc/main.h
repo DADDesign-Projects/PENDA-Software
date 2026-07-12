@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -115,50 +115,7 @@ void MX_TIM6_Init(void);
 #define Encoder1_SW_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-// use to determine if need erase persistent storage (Increment if change storage structure)
 
-// =====** DAD **=================================================================
-
-// PENDA  Hardware
-#define PENDAI
-
-// PENDA II Hardware
-//#define PENDAII
-
-// use to determine if need erase persistent storage (Increment if change storage structure)
-#define kNumBuild 1
-
-// Define MONITOR to monitor the effect loop execution time.
-#ifdef DEBUG
-#define MONITOR
-#endif
-
-// Define FONTH to load resources in code (.h file).
-// Comment out #define FONTH to use resources loaded in QSPI flash. See https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher  for more information.
-// USE RAM allows you to automatically change the resource loading mode depending on the Debug or Release build mode
-#ifdef USE_RAM
-#define FONTH
-#endif
-
-/* Sections ---------------------------------------------------------*/
-#define SDRAM_SECTION __attribute__((section(".SDRAM_Section")))
-#define QFLASH_SECTION __attribute__((section(".QFLASH_Section")))
-#define NO_CACHE_RAM __attribute__((section(".RAM_NO_CACHE_Section")))
-#define ITCM __attribute__((section(".moveITCM")))
-
-
-/* Audio ---------------------------------------------------------*/
-#define AUDIO_BUFFER_SIZE 4
-#define SAMPLING_RATE 48000.0f
-#define UI_RT_SAMPLING_RATE (SAMPLING_RATE / (float) AUDIO_BUFFER_SIZE)
-
-struct AudioBuffer{
-	float Right;
-	float Left;
-};
-extern HAL_StatusTypeDef StartAudio();
-
-// =====** END DAD **=================================================================
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

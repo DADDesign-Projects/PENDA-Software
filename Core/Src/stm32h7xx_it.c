@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -55,6 +55,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern SDRAM_HandleTypeDef hsdram1;
 extern I2C_HandleTypeDef hi2c2;
 extern QSPI_HandleTypeDef hqspi;
@@ -359,6 +360,20 @@ void QUADSPI_IRQHandler(void)
   /* USER CODE BEGIN QUADSPI_IRQn 1 */
 
   /* USER CODE END QUADSPI_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USB OTG FS global interrupt.
+  */
+void OTG_FS_IRQHandler(void)
+{
+  /* USER CODE BEGIN OTG_FS_IRQn 0 */
+
+  /* USER CODE END OTG_FS_IRQn 0 */
+  HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+  /* USER CODE BEGIN OTG_FS_IRQn 1 */
+
+  /* USER CODE END OTG_FS_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

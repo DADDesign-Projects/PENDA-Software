@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -18,19 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "cDisplay.h"
-#include "cEncoder.h"
-#include "cIS25LPxxx.h"
-#include "cWM8731.h"
-#include "cMemory.h"
-#include "QSPI.h"
-#include "PendaUI.h"
-#include "cMonitor.h"
-#include "Effect.h"
-
 
 /* USER CODE END Includes */
 
@@ -57,6 +48,8 @@ I2C_HandleTypeDef hi2c2;
 
 QSPI_HandleTypeDef hqspi;
 
+RNG_HandleTypeDef hrng;
+
 SAI_HandleTypeDef hsai_BlockA1;
 SAI_HandleTypeDef hsai_BlockB1;
 DMA_HandleTypeDef hdma_sai1_a;
@@ -79,133 +72,14 @@ SDRAM_HandleTypeDef hsdram1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
+static void MX_RNG_Init(void);
 /* USER CODE BEGIN PFP */
-
+extern void HardwareAndCoInitialize();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-// =====** DAD **=================================================================
-
-extern "C" void DAD_MPU_Config(void);
-
-//QFlash
-DadQSPI::cIS25LPxxx __Flash;
-
-// Revision
-enum HardRev{
-	Rev5,
-	Rev7
-}__HardRev;
-
-// WM8731 management for Rev5
-Dad::cWM8731  __WM8731;
-
-//GFX
-DECLARE_DISPLAY(__Display);
-DECLARE_LAYER(Back, TFT_HEIGHT , TFT_WIDTH);
-
-//QSPI Storage
-QFLASH_SECTION DadQSPI::cQSPI_FlasherStorage  __FlashStorage;
-DadQSPI::cQSPI_PersistentStorage 			  __PersistentStorage;
-
-// UI Object Manager
-DadUI::cUIObjectManager __UIObjManager;
-
-// Monitor
-#ifdef MONITOR
-DadMisc::cMonitor __Monitor;
-volatile float CPULoad;
-volatile float EffectTime;
-volatile float Frequency;
-#endif
-
-// Effect Manager
-EFFECT		__Effect;
-
-// ------------------------------------------------------------------------
-// AudioCallback - Processes audio in real-time (called by the audio engine)
-// ------------------------------------------------------------------------
-bool __MemOnOff = false; 	// Global state variable: Tracks whether audio processing is active
-uint32_t __CT=0; 			// Cycle counter
-							// - Used in main loop to blink an activity LED
- 	 	 	 	 	 	 	// - The LED blink rate indicates proper callback execution
-
-// ITCM: Optimized for fast execution (placed in Instruction Tightly Coupled Memory)
-ITCM void AudioCallback(AudioBuffer *pIn, AudioBuffer *pOut) {
-	__Monitor.startMonitoring();
-
-	// Get the current ON/OFF state from the UI (real-time safe)
-    bool OnOff = DadUI::cPendaUI::RTProcess();
-    // Process each sample in the audio buffer
-    for (size_t i = 0; i < AUDIO_BUFFER_SIZE; i++) {
-    	// Detect state change only when audio is near silence (avoid clicks)
-        if ((OnOff != __MemOnOff) && (fabs(pIn->Right + pIn->Left) < 0.001f)) {
-            __MemOnOff = OnOff; // Update state if crossing threshold
-        }
-
-        // Process effect
-        __Effect.Process(pIn, pOut, __MemOnOff);
-
-        // Advance buffer pointers (post-increment)
-    	pOut++;
-    	pIn++;
-    }
-
-    // Increment cycle counter for visual feedback:
-    __CT++;
-
-    __Monitor.stopMonitoring();
-}
-
-// ------------------------------------------------------------------------
-// Specific initialization for hardware revision 5:
-// input and output signals are inverted compared to revision 7."
-// ------------------------------------------------------------------------
-extern "C" void HAL_SAIRev5_MspInit(SAI_HandleTypeDef* hsai);
-void MX_SAI1Rev5_Init(void)
-{
-  HAL_SAI_RegisterCallback(&hsai_BlockA1, HAL_SAI_MSPINIT_CB_ID,HAL_SAIRev5_MspInit);
-  HAL_SAI_RegisterCallback(&hsai_BlockB1, HAL_SAI_MSPINIT_CB_ID,HAL_SAIRev5_MspInit);
-
-  hsai_BlockA1.Instance = SAI1_Block_A;
-  // ===============================================
-  // Dad Change TX->RX
-  hsai_BlockA1.Init.AudioMode = SAI_MODEMASTER_RX;
-  hsai_BlockA1.Init.Synchro = SAI_ASYNCHRONOUS;
-  hsai_BlockA1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
-  hsai_BlockA1.Init.NoDivider = SAI_MCK_OVERSAMPLING_DISABLE;
-  hsai_BlockA1.Init.MckOverSampling = SAI_MCK_OVERSAMPLING_DISABLE;
-  hsai_BlockA1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
-  hsai_BlockA1.Init.AudioFrequency = SAI_AUDIO_FREQUENCY_48K;
-  hsai_BlockA1.Init.SynchroExt = SAI_SYNCEXT_DISABLE;
-  hsai_BlockA1.Init.MonoStereoMode = SAI_STEREOMODE;
-  hsai_BlockA1.Init.CompandingMode = SAI_NOCOMPANDING;
-  hsai_BlockA1.Init.TriState = SAI_OUTPUT_NOTRELEASED;
-  if (HAL_SAI_InitProtocol(&hsai_BlockA1, SAI_I2S_MSBJUSTIFIED, SAI_PROTOCOL_DATASIZE_24BIT, 2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  hsai_BlockB1.Instance = SAI1_Block_B;
-  // ===============================================
-  // Dad Change RC->TX
-  hsai_BlockB1.Init.AudioMode = SAI_MODESLAVE_TX;
-  hsai_BlockB1.Init.Synchro = SAI_SYNCHRONOUS;
-  hsai_BlockB1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
-  hsai_BlockB1.Init.MckOverSampling = SAI_MCK_OVERSAMPLING_DISABLE;
-  hsai_BlockB1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
-  hsai_BlockB1.Init.SynchroExt = SAI_SYNCEXT_DISABLE;
-  hsai_BlockB1.Init.MonoStereoMode = SAI_STEREOMODE;
-  hsai_BlockB1.Init.CompandingMode = SAI_NOCOMPANDING;
-  hsai_BlockB1.Init.TriState = SAI_OUTPUT_NOTRELEASED;
-  if (HAL_SAI_InitProtocol(&hsai_BlockB1, SAI_I2S_MSBJUSTIFIED, SAI_PROTOCOL_DATASIZE_24BIT, 2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-}
-
-// ===** End DAD **==================================================================
 /* USER CODE END 0 */
 
 /**
@@ -216,13 +90,11 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-// =====** DAD **=================================================================
+	// =====** DAD **=================================================================
 
-#ifdef USE_RAM
 	SCB->VTOR = 0x24000000;
-#endif
 
-// ===** End DAD **==================================================================
+	// ===** End DAD **==================================================================
 
   /* USER CODE END 1 */
 
@@ -254,102 +126,10 @@ int main(void)
   MX_DMA2D_Init();
   MX_USART1_UART_Init();
   MX_TIM6_Init();
+  MX_USB_DEVICE_Init();
+  MX_RNG_Init();
   /* USER CODE BEGIN 2 */
-
-// =====** DAD **=================================================================
-
-  // Performing initializations -----------------------
-  DAD_MPU_Config();				// Initialize MPU
-  __Flash.Init(&hqspi); 		// Initialize Flash memory
-
-  SCB_EnableICache(); 			// Enable I-Cache
-  SCB_EnableDCache(); 			// Enable D-Cache
-#ifdef MONITOR
-  __Monitor.Init();
-#endif
-  // Revision configuration
-  MX_DMA_Init();
-  if(GPIO_PIN_RESET == HAL_GPIO_ReadPin(Rev5_GPIO_Port, Rev5_Pin)){
-	  __HardRev = Rev5;
-	  MX_I2C2_Init();
-	  MX_SAI1Rev5_Init();
-	  __WM8731.Initialize(&hi2c2);
-  }else if(GPIO_PIN_RESET == HAL_GPIO_ReadPin(Rev7_GPIO_Port, Rev7_Pin)){
-	  __HardRev = Rev7;
-	  MX_SAI1_Init();
-	  GPIO_InitTypeDef GPIO_InitStruct = {0};
-	  GPIO_InitStruct.Pin = GPIO_PIN_11;
-	  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	  GPIO_InitStruct.Pull = GPIO_NOPULL;
-	  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
-  }else{
-	  // Revision not supported
-	  while(1){
-	     HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-		 HAL_Delay(100);
-	  }
-  }
-
-  // Display Initializations
-  INIT_DISPLAY(__Display, &hspi1);
-#ifdef PENDAI
-  __Display.setOrientation(Rotation::Degre_90);
-#elif defined(PENDAII)
-  __Display.setOrientation(Rotation::Degre_270);
-#endif
-
-  DadGFX::cLayer *pBack = ADD_LAYER(Back, 0,0,1);
-  DadGFX::cFont Font(FONTL);
-
-  // PersistentStorage initialization
-  if(__PersistentStorage.Init()){
-		pBack->eraseLayer(SPLASHSCREEN_BACK_COLOR);
-
-	    const uint16_t TextCentre = 320/2;
-	    pBack->setTextFrontColor(SPLASHSCREEN_TEXT_COLOR);
-	    pBack->setFont(&Font);
-
-	    const char *pText1 = "Please wait (~60s)";
-	    uint16_t TextWidth = pBack->getTextWidth(pText1);
-	    pBack->setCursor(TextCentre - (TextWidth/2), 40);
-	    pBack->drawText(pText1);
-
-	    const char *pText2 = "Flash memory";
-	    TextWidth = pBack->getTextWidth(pText2);
-	    pBack->setCursor(TextCentre - (TextWidth/2), 80);
-	    pBack->drawText(pText2);
-
-	    const char *pText3 = "initialization";
-	    TextWidth = pBack->getTextWidth(pText3 );
-	    pBack->setCursor(TextCentre - (TextWidth/2), 120);
-	    pBack->drawText(pText3 );
-
-	    const char *pText4 = "in progress.";
-	    TextWidth = pBack->getTextWidth(pText4);
-	    pBack->setCursor(TextCentre - (TextWidth/2), 160);
-	    pBack->drawText(pText4);
-
-	    __Display.flush();
-	    __PersistentStorage.InitializeMemory();
-  }
-  pBack->eraseLayer(DadGFX::sColor(0,0,0,255));
-
-  // GUI Initializations
-  DadUI::cPendaUI::Init(EFFECT_NAME, EFFECT_VERSION, &huart1, &htim6);
-
-  // Effect Initialization
-  __Effect.Initialize();
-
-  // Audio launch
-  StartAudio();
-
-  // Display refresh
-  __Display.flush();
-
-// ===** End DAD **=================================================================
-
+  HardwareAndCoInitialize();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -359,25 +139,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-// =====** DAD **=================================================================
-	  DadUI::cPendaUI::Update(); 				// Update UI
-      __Display.flush();		 				// Update display
-
-      // LED blinking: indicates that the audio loop is operating correctly.
-      if(__CT >= (uint32_t) (((float)SAMPLING_RATE / 4.0f)  * 0.5f)){
-    	  __CT =0;
-    	  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      }
-#ifdef MONITOR
-      CPULoad = __Monitor.getCPULoad_percent();
-      EffectTime = __Monitor.getAverageExecutionTime_us();
-      Frequency = __Monitor.getAverageFrequency_Hz();
-      __Monitor.reset();
-#endif
-	  HAL_Delay(100);
-
-// ===** End DAD **=================================================================
-
   }
   /* USER CODE END 3 */
 }
@@ -404,8 +165,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -572,9 +334,9 @@ void MX_QUADSPI_Init(void)
   /* QUADSPI parameter configuration*/
   hqspi.Instance = QUADSPI;
   hqspi.Init.ClockPrescaler = 2;
-  hqspi.Init.FifoThreshold = 1;
+  hqspi.Init.FifoThreshold = 4;
   hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_HALFCYCLE;
-  hqspi.Init.FlashSize = 22;
+  hqspi.Init.FlashSize = 23;
   hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
   hqspi.Init.ClockMode = QSPI_CLOCK_MODE_0;
   hqspi.Init.FlashID = QSPI_FLASH_ID_1;
@@ -586,6 +348,33 @@ void MX_QUADSPI_Init(void)
   /* USER CODE BEGIN QUADSPI_Init 2 */
 
   /* USER CODE END QUADSPI_Init 2 */
+
+}
+
+/**
+  * @brief RNG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RNG_Init(void)
+{
+
+  /* USER CODE BEGIN RNG_Init 0 */
+
+  /* USER CODE END RNG_Init 0 */
+
+  /* USER CODE BEGIN RNG_Init 1 */
+
+  /* USER CODE END RNG_Init 1 */
+  hrng.Instance = RNG;
+  hrng.Init.ClockErrorDetection = RNG_CED_ENABLE;
+  if (HAL_RNG_Init(&hrng) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RNG_Init 2 */
+
+  /* USER CODE END RNG_Init 2 */
 
 }
 
@@ -829,12 +618,12 @@ void MX_FMC_Init(void)
   hsdram1.Init.ReadPipeDelay = FMC_SDRAM_RPIPE_DELAY_0;
   /* SdramTiming */
   SdramTiming.LoadToActiveDelay = 2;
-  SdramTiming.ExitSelfRefreshDelay = 7;
-  SdramTiming.SelfRefreshTime = 4;
+  SdramTiming.ExitSelfRefreshDelay = 8;
+  SdramTiming.SelfRefreshTime = 6;
   SdramTiming.RowCycleDelay = 8;
   SdramTiming.WriteRecoveryTime = 3;
-  SdramTiming.RPDelay = 16;
-  SdramTiming.RCDDelay = 10;
+  SdramTiming.RPDelay = 3;
+  SdramTiming.RCDDelay = 3;
 
   if (HAL_SDRAM_Init(&hsdram1, &SdramTiming) != HAL_OK)
   {
@@ -842,75 +631,6 @@ void MX_FMC_Init(void)
   }
 
   /* USER CODE BEGIN FMC_Init 2 */
-#define SDRAM_MODEREG_BURST_LENGTH_2 ((1 << 0))
-#define SDRAM_MODEREG_BURST_LENGTH_4 ((1 << 1))
-
-#define SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL ((0 << 3))
-
-#define SDRAM_MODEREG_CAS_LATENCY_3 ((1 << 4) | (1 << 5))
-
-#define SDRAM_MODEREG_OPERATING_MODE_STANDARD ()
-
-#define SDRAM_MODEREG_WRITEBURST_MODE_SINGLE ((1 << 9))
-#define SDRAM_MODEREG_WRITEBURST_MODE_PROG_BURST ((0 << 9))
-
-   FMC_SDRAM_CommandTypeDef Command;
-
-   /* Step 3:  Configure a clock configuration enable command */
-   Command.CommandMode            = FMC_SDRAM_CMD_CLK_ENABLE;
-   Command.CommandTarget          = FMC_SDRAM_CMD_TARGET_BANK1;
-   Command.AutoRefreshNumber      = 1;
-   Command.ModeRegisterDefinition = 0;
-
-   /* Send the command */
-   if(HAL_SDRAM_SendCommand(&hsdram1, &Command, 0x1000) != HAL_OK){
-	    Error_Handler();
-   }
-
-   /* Step 4: Insert 100 ms delay */
-   HAL_Delay(100);
-
-   /* Step 5: Configure a PALL (precharge all) command */
-   Command.CommandMode            = FMC_SDRAM_CMD_PALL;
-   Command.CommandTarget          = FMC_SDRAM_CMD_TARGET_BANK1;
-   Command.AutoRefreshNumber      = 1;
-   Command.ModeRegisterDefinition = 0;
-
-   /* Send the command */
-   if(HAL_SDRAM_SendCommand(&hsdram1, &Command, 0x1000) != HAL_OK){
-	    Error_Handler();
-   }
-
-   /* Step 6 : Configure a Auto-Refresh command */
-   Command.CommandMode            = FMC_SDRAM_CMD_AUTOREFRESH_MODE;
-   Command.CommandTarget          = FMC_SDRAM_CMD_TARGET_BANK1;
-   Command.AutoRefreshNumber      = 4;
-   Command.ModeRegisterDefinition = 0;
-
-   /* Send the command */
-   if(HAL_SDRAM_SendCommand(&hsdram1, &Command, 0x1000) != HAL_OK){
-	    Error_Handler();
-   }
-
-   /* Step 7: Program the external memory mode register */
-   uint32_t tmpmrd = 0;
-   tmpmrd = (uint32_t)SDRAM_MODEREG_BURST_LENGTH_4
-            | SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL | SDRAM_MODEREG_CAS_LATENCY_3
-            | SDRAM_MODEREG_WRITEBURST_MODE_SINGLE;
-
-   Command.CommandMode            = FMC_SDRAM_CMD_LOAD_MODE;
-   Command.CommandTarget          = FMC_SDRAM_CMD_TARGET_BANK1;
-   Command.AutoRefreshNumber      = 1;
-   Command.ModeRegisterDefinition = tmpmrd;
-
-   /* Send the command */
-   if(HAL_SDRAM_SendCommand(&hsdram1, &Command, 0x1000) != HAL_OK){
-	    Error_Handler();
-   }
-
-   if(HAL_SDRAM_ProgramRefreshRate(&hsdram1, 0x81A - 20) != HAL_OK){
-	    Error_Handler();
-   }
 
   /* USER CODE END FMC_Init 2 */
 }
@@ -924,6 +644,7 @@ void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
+
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
@@ -998,6 +719,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(TFT_DC_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
+
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
@@ -1019,8 +741,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

@@ -21,7 +21,7 @@
 *****************************************************************************
 ** @attention
 **
-** Copyright (c) 2024 STMicroelectronics.
+** Copyright (c) 2026 STMicroelectronics.
 ** All rights reserved.
 **
 ** This software is licensed under terms that can be found in the LICENSE file
@@ -45,14 +45,10 @@ MEMORY
 {
   FLASH (rx)     : ORIGIN = 0x08000000, LENGTH = 128K
   DTCMRAM (xrw)  : ORIGIN = 0x20000000, LENGTH = 128K
-  RAM_D1 (xrw)   : ORIGIN = 0x24000000, LENGTH = 448K
+  RAM_D1 (xrw)   : ORIGIN = 0x24000000, LENGTH = 512K
   RAM_D2 (xrw)   : ORIGIN = 0x30000000, LENGTH = 288K
   RAM_D3 (xrw)   : ORIGIN = 0x38000000, LENGTH = 64K
   ITCMRAM (xrw)  : ORIGIN = 0x00000000, LENGTH = 64K
-  RAM_NO_CACHE	(xrw) : ORIGIN = 0x24070000, LENGTH = 64K
-  QFLASH (rx)		 : ORIGIN = 0x90000000, LENGTH = 7M
-  QFLASH_LOADER (rx) : ORIGIN = 0x90700000, LENGTH = 1M
-  SDRAM	(xrw)		 : ORIGIN = 0xc0000000, LENGTH = 64M
 }
 
 /* Define output sections */
@@ -63,20 +59,15 @@ SECTIONS
   {
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
-    KEEP(*(.text.Reset_Handler))
-    KEEP(*(.text.SystemInit))
-  	KEEP(*(.text.ExitRun0Mode))
     . = ALIGN(4);
   } >FLASH
 
   /* The program code and other data goes into FLASH */
-  __lTEXT = LOADADDR(.text);
   .text :
   {
     . = ALIGN(4);
-    __sTEXT = .;
-    *(EXCLUDE_FILE(*DAD_STM_GFX2/Src/*.o) .text) 
-    *(EXCLUDE_FILE(*DAD_STM_GFX2/Src/*.o) .text*)
+    *(.text)           /* .text sections (code) */
+    *(.text*)          /* .text* sections (code) */
     *(.glue_7)         /* glue arm to thumb code */
     *(.glue_7t)        /* glue thumb to arm code */
     *(.eh_frame)
@@ -85,9 +76,8 @@ SECTIONS
     KEEP (*(.fini))
 
     . = ALIGN(4);
-    __eTEXT = .;
     _etext = .;        /* define a global symbols at end of code */
-  } >RAM_D1 AT> FLASH
+  } >FLASH
 
   /* Constant data goes into FLASH */
   .rodata :
@@ -148,23 +138,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
   } >RAM_D1 AT> FLASH
-  
-  /* DADD FLASH Section ========================================================== */
-   __lITCM = LOADADDR(.ITCMRAM_Section);
-  .ITCMRAM_Section :
-  {
-      . = ALIGN(4);
-    __sITCM = .;
-    *(.moveITCM)
-    *DAD_STM_GFX2/Src/*.o (.text)
-    *DAD_STM_GFX2/Src/*.o (.text*)    
-    . = ALIGN(4);
-    __eITCM = .;
-  } >ITCMRAM AT> FLASH
 
-  
-  /*  ============================================================================ */  
- 
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
@@ -192,30 +166,6 @@ SECTIONS
     . = ALIGN(8);
   } >RAM_D1
 
- /* DADD Sections ========================================================== */  
-  .RAM_NO_CACHE_Section :
-  {
-    . = ALIGN(4);
-    KEEP (*(.RAM_NO_CACHE_Section))
-    . = ALIGN(4);
-  } >RAM_NO_CACHE
-  
- .QFLASH_Section (NOLOAD):
-  {
-    . = ALIGN(4);
-    KEEP (*(.QFLASH_Section))
-    . = ALIGN(4);
-  } >QFLASH
-
- .SDRAM_Section (NOLOAD):
-  {
-    . = ALIGN(4);
-    KEEP (*(.SDRAM_Section))
-    . = ALIGN(4);
-  } >SDRAM
- /* ======================================================================== */  
-  
-  
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {

@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -66,6 +66,7 @@ void USART1_IRQHandler(void);
 void FMC_IRQHandler(void);
 void TIM6_DAC_IRQHandler(void);
 void QUADSPI_IRQHandler(void);
+void OTG_FS_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
