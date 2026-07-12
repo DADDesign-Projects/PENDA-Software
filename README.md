@@ -1,103 +1,97 @@
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
+![Platform](https://img.shields.io/badge/Platform-Software-orange)
+![MCU](https://img.shields.io/badge/MCU-STM32H7-brightgreen)
+![Languages](https://img.shields.io/badge/Languages-C%20%7C%20C++-yellow)
+![IDE](https://img.shields.io/badge/IDE-STM32CubeIDE-lightgrey)
+![Status](https://img.shields.io/badge/Status-Mature%20%7C%20Active%20Development-success)
 # PENDA Software
 ![Image1](Media/Penda_1.jpg)
 
-## Introduction
-PENDA Software is a collection of audio effects built on an advanced framework, specifically designed for the PENDA Hardware platform ([GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)). You can use this framework to easily develop your own high-quality audio effect pedals, focusing entirely on signal processing while the framework handles all hardware complexities. 
+# 🎸 PENDA Software
 
-### Last evolutions
-- Restructured codebase to ensure compatibility between the PENDA and PENDAII hardware platforms.
-- Reworked memory handling to enable independent preset saving without interference between different effects.
-- Added automatic and independent system parameter saving, currently storing input volume and balance on PENDAII.
-- Fixed a bug in the graphics library when using 18-bit color formats.
-- Added a CPU load and execution time monitoring class for performance diagnostics.
+Software for the **PENDA** digital audio effects pedal platform.
+>**Important: New version with major changes — restructured and integrated the FORGE framework**
+## 🛠 Hardware Overview
 
-### Author
-This project is developed by DAD Design.
+The PENDA platform is built around a **Daisy Seed** mounted on a custom-designed carrier board.
 
-### License
-PENDA Software is released under the **MIT License**.
+**Core (Daisy Seed)**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+* STM32H750 MCU
+* 64 MB SDRAM
+* 8 MB QSPI Flash
+* PCM3060 high-quality stereo audio codec
+* USB connectivity and onboard debugging
 
-### Feedback
-I would be very happy to receive your feedback on the use of this project. If you've worked on any projects using PENDA Software or have suggestions, bug reports, or any questions, don't hesitate to contact me!
+**Carrier Board**
 
-## Key Features
-### Audio Effects
+* Display management
+* User controls (potentiometers and rotary encoders)
+* Audio input/output stage with impedance matching and signal conditioning
 
-#### Tremolo/Vibrato
+## 💻 Software Architecture
 
-- Low Frequency Oscillator (LFO) with adjustable speed and two selectable waveforms.
-- Adjustable duty cycle to modify the LFO waveform shape.
-- Independent adjustment of tremolo (amplitude modulation) and vibrato (frequency modulation) intensities.
+The software is built on top of the **FORGE** framework, a modular platform dedicated to the development of digital audio effects for guitar, vocals, keyboards, and other audio applications.
 
-#### Delay
+This repository implements the Board Support Package (BSP) for the PENDA platform. It initializes and configures all STM32 hardware interfaces according to the PENDA hardware design and creates the FORGE framework objects with the appropriate hardware-specific parameters (audio, display, controls, storage, and peripherals).
 
-- Main delay adjustable from 0.100 to 1.5 seconds.
-- Second delay line available with selectable rhythmic subdivisions.
-- Modulation applied to the delayed signal for subtle chorus/flanger-type effects.
-- Independent bass and treble control on echoes to fine-tune their tonal character.
-	
-#### PENDA Software Framework
+>*By separating the hardware initialization from the application logic, the same FORGE effect modules can be reused across different hardware platforms with minimal changes*.  
 
-- Full Integration: Seamlessly works with PENDA Hardware and DAISY Seed.
-- Optimized Audio Processing: Built-in support for the Audio CODEC, handling initialization and real-time processing.
-- Memory Management:
-    - SDRAM for large, volatile data storage.
-    - QSPI Flash for fast, non-volatile storage, including file persistence and flashing utilities.
+## 🎛️ Available Effects
 
-- Graphical User Interface (GUI):
-    - TFT Display with ST7789 driver support.
-    - DaisySeedGFX2 for advanced visualization and PendaUI for customizable user interface management.
-    - Interactive controls via footswitches (tap tempo), rotary encoders, and MIDI protocol.
+The project includes several ready-to-use build configurations that generate complete digital audio effects based on the high-level processing modules provided by the FORGE framework.
 
-- Development Environment:
-    - Built with STM32Cube, offering a modular and extensible architecture for easy customization.
+The currently available examples include:
 
-With PENDA Hardware, this framework provides an all-in-one solution for pedal effect development, eliminating the need for low-level hardware management.
+Reverberation
+Delay
+Modulation effects (Chorus, Flanger, Tremolo, Vibrato, Phaser, etc.)
 
-## Resources
-- **PENDA-Hardware Repository**: [GitHub Link](https://github.com/DADDesign-Projects/PENDA-Hardware)
-- **DaisySeedGFX2 Repository**: [GitHub Link](https://github.com/DADDesign-Projects/DaisySeedGFX2)
-- **Daisy_QSPI_Flasher Repository**: [GitHub Link](https://github.com/DADDesign-Projects/Daisy_QSPI_Flasher)
+These projects can be used as-is, customized to fit your own requirements, or simply serve as reference implementations and starting points for learning how to develop your own digital audio effects.
 
+## 🚀 RAM Execution and Flash Loader
 
+To maximize execution performance, simplify debugging, and overcome the 128 KB Flash limitation of the STM32H750 internal memory, all applications are compiled for execution from internal RAM.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+During development, the debugger automatically loads the application into RAM, providing a fast edit-build-debug cycle.
 
-## Generic GUI
-### Encoder Controls
+For standalone operation, the generated ELF executable is transferred to the external QSPI Flash memory located on the Daisy Seed. At power-up, a resident bootloader copies the application into RAM and starts its execution.
 
-- **Encoder 0 (Right):**  
-  Scroll through the menu
+The deployment process is fully automated using the OSCAR_Flasher_Server and PENDA_FlasherLoader utilities, making it easy to build, upload, and launch applications without requiring any manual flashing steps.
 
-- **Encoders 1/2/3 (Above display):**  
-  Adjust the displayed parameter below  
-  *(Pro tip: Press + turn simultaneously for precision adjustment)*
+## 🚀 Getting Started
 
-### Memory Screen Functions
-- **Encoder 1 (Top left):** Select function → `Save` / `Restore` / `Erase`
-- **Encoder 2 (Top center):** Select target memory slot
-- **Encoder 3 (Top right):**  
-  - Switch to `Yes` to confirm  
-  - Press to execute action
+Clone the repository
+``` bash
+git clone --recurse-submodules https://github.com/DADDesign-Projects/PENDA-Software
+```
 
-> **Important Notes:**  
-> - Cannot erase currently active memory  
-> - Cannot restore/erase never-saved slots
+Load the files from the FORGE/Resources directory into the external flash drive. Use the QSPI Flasher utility: https://github.com/DADDesign-Projects/OSCAR_P01_FlasherClient
 
-### Footswitch Controls
+Modify debug build configuration for STM32CubeIDE 
+Use an ST-LINK or compatible debug probe
 
-#### Footswitch 1
-- **Short press:** Cycle memory presets  
-- **Long press (1.5s):** Toggle effect On/Off
+## 📄 License
+This project is licensed under the Apache 2.0 License (https://opensource.org/licenses/Apache-2.0).
 
-#### Footswitch 2
-- **Tap tempo:** Controls tremolo rate
+## 🔗 Related Projects
+- PENDA-Hardware: https://github.com/DADDesign-Projects/PENDA-Hardware
+- PENDA_FlasherLoader: https://github.com/DADDesign-Projects/PENDA_FlasherLoader
+- OSCAR_Flasher_Server: https://github.com/DADDesign-Projects/OSCAR_Flasher_Server
+- OSCAR_PY_Flasher_Server: https://github.com/DADDesign-Projects/OSCAR_PY_Flasher_Server
+- DAD_FORGE: https://github.com/DADDesign-Projects/DAD_FORGE
+- TrueType-to-Bitmap-Converter: https://github.com/DADDesign-Projects/TrueType-to-Bitmap-Converter
 
-### GUI Screenshot
-![Image1](Media/PENDA_UI_1.jpg)
+  
+## 📬 Contact
+If you have questions, suggestions, bug reports, or ideas for improving the FORGE framework or the PENDA platform, feel free to get in touch.
 
-![Image2](Media/PENDA_UI_2.jpg)
+Contributions, feedback, and community participation are always welcome.
 
-![Image3](Media/PENDA_UI_3.jpg)
+**Email**
+📧 daddesign.projects@gmail.com
+
+**Facebook**
+🎛️🎶 Follow all the latest news, project progress, and demonstrations on my Facebook page!
+
+https://www.facebook.com/people/DADDesign-Projects/61583645957068/
