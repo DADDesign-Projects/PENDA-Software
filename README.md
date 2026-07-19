@@ -71,7 +71,7 @@ Load the files from the FORGE/Resources directory into the external flash drive.
 Modify debug build configuration for STM32CubeIDE 
 Use an ST-LINK or compatible debug probe
 
-Documentation and tutorials for framfork FORGE available here: (https://daddesign-projects.github.io/OSCAR_Documentation/)
+**Documentation and tutorials** for framfork FORGE available here: (https://daddesign-projects.github.io/OSCAR_Documentation/)
 
 ## 📄 License
 This project is licensed under the Apache 2.0 License (https://opensource.org/licenses/Apache-2.0).
