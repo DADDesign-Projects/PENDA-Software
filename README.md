@@ -66,7 +66,7 @@ Clone the repository
 git clone --recurse-submodules https://github.com/DADDesign-Projects/PENDA-Software
 ```
 
-Load the files from the FORGE/Resources directory into the external flash drive. Use the QSPI Flasher utility: https://github.com/DADDesign-Projects/OSCAR_P01_FlasherClient
+Load the files from the FORGE/Resources directory into the external flash drive. Use the QSPI Flasher utility: [OSCAR_Flasher_Server](https://github.com/DADDesign-Projects/OSCAR_P01_FlasherClient) and [PENDA_FlasherLoader](https://github.com/DADDesign-Projects/PENDA_FlasherLoader)
 
 Modify debug build configuration for STM32CubeIDE 
 Use an ST-LINK or compatible debug probe

@@ -17,10 +17,10 @@
 // ==========================================================================
 
 
-#define ACTIVE_EFFECT  EFFECT_DELAY
+//#define ACTIVE_EFFECT  EFFECT_DELAY
 //#define ACTIVE_EFFECT EFFECT_REVERB
 //#define ACTIVE_EFFECT EFFECT_MODULATIONS
-//#define ACTIVE_EFFECT EFFECT_TEMPLATE
+#define ACTIVE_EFFECT EFFECT_TEMPLATE
 //#define ACTIVE_EFFECT EFFECT_TEMPLATE_MULTI_MODE
 
 
