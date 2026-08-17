@@ -29,7 +29,7 @@
 // Instruction TCM (Tightly Coupled Memory) for fast code execution
 // (Provisional?) halt of ITCM memory mapping for critical sections due to unresolved malfunctions
 //#define ITCM __attribute__((section(".moveITCM")))
-
+#define ITCM __attribute__((section(".itcm_data")))
 
 #define RAM_D1 __attribute__((section(".RAM_D1_Section")))
 
