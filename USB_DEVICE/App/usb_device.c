@@ -29,7 +29,7 @@
 /* USER CODE BEGIN Includes */
 
 // =====** DAD **=================================================================
-#include "../../PENDA_BSP/Inc/@Options.h"
+#include "Options.h"
 #ifdef USB_MIDI
 extern void MX_USB_MIDI_DEVICE_Init(void);
 #endif
