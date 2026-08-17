@@ -142,6 +142,18 @@ SECTIONS
   } >DTCMRAM AT> RAM_EXEC
 
  /* DADD ITCM Section ========================================================== */
+    
+  .itcm_data :
+  {
+    . = ALIGN(4);
+    _sitcm_data = .;  /* Début de la section en RAM */
+    *(.itcm_data)     /* Tous les objets avec cet attribut */
+    *(.itcm_data*)
+    . = ALIGN(4);
+    _eitcm_data = .;  /* Fin de la section en RAM */
+  } >ITCMRAM          /* Placer en ITCMRAM pour l'exécution */
+ 
+   
   __lITCM = LOADADDR(.ITCMRAM_Section);
   .ITCMRAM_Section :
   {
